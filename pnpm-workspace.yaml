@@ -1,0 +1,3 @@
+packages:
+  - 'examples/todo-app/src/frontend'
+  - 'packages/http-auth-js'

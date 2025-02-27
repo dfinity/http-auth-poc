@@ -1,0 +1,28 @@
+use crate::api::ApiResponse;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize)]
+pub struct TodoItem {
+    pub id: u32,
+    pub title: String,
+    pub completed: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CreateTodoItemRequest {
+    pub title: String,
+}
+
+pub type CreateTodoItemResponse = ApiResponse<TodoItem>;
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpdateTodoItemRequest {
+    pub title: Option<String>,
+    pub completed: Option<bool>,
+}
+
+pub type UpdateTodoItemResponse = ApiResponse;
+
+pub type DeleteTodoItemResponse = ApiResponse;
+
+pub type ListTodosResponse = ApiResponse<Vec<TodoItem>>;

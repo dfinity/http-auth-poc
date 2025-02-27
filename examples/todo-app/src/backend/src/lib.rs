@@ -1,0 +1,97 @@
+mod api;
+mod assets;
+mod root_key;
+mod router;
+mod todo;
+
+use api::ErrorResponse;
+use assets::*;
+use ic_cdk::*;
+use ic_http_certification::{HttpRequest, HttpResponse};
+use matchit::Router;
+use once_cell::sync::OnceCell;
+use root_key::set_root_key;
+use router::MethodRouter;
+use todo::*;
+
+#[init]
+fn init(root_key: Option<Vec<u8>>) {
+    set_root_key(root_key);
+    certify_all_assets();
+}
+
+#[post_upgrade]
+fn post_upgrade() {
+    certify_all_assets();
+}
+
+#[query]
+fn http_request(req: HttpRequest) -> HttpResponse {
+    let path = req.get_path().expect("Failed to parse request path");
+
+    if path.starts_with("/api") {
+        // [TODO] - return metrics on query
+        return HttpResponse::builder().with_upgrade(true).build();
+    }
+
+    serve_asset(&req)
+}
+
+#[update]
+fn http_request_update(req: HttpRequest) -> HttpResponse {
+    let path = req.get_path().expect("Failed to parse request path");
+
+    if path.starts_with("/api") {
+        return serve_api_route(&req);
+    }
+
+    ErrorResponse::bad_request("Update calls not allowed for certified static assets".to_string())
+}
+
+fn serve_api_route(req: &HttpRequest) -> HttpResponse<'static> {
+    let router = get_api_router();
+    let path = req.get_path().expect("Failed to parse request path");
+
+    let Ok(handler) = router.at(&path) else {
+        return HttpResponse::not_found(b"Not Found", vec![]).build();
+    };
+
+    handler.value.route(req, &handler.params)
+}
+
+fn get_api_router() -> &'static Router<MethodRouter> {
+    static API_ROUTER: OnceCell<Router<MethodRouter>> = OnceCell::new();
+
+    API_ROUTER.get_or_init(|| {
+        let mut router = Router::new();
+
+        router
+            .insert(
+                "/api/todos",
+                MethodRouter::new()
+                    .get(list_todo_items_handler)
+                    .post(create_todo_item_handler)
+                    .build(),
+            )
+            .unwrap();
+
+        router
+            .insert(
+                "/api/todos/:id",
+                MethodRouter::new()
+                    .patch(update_todo_item_handler)
+                    .delete(delete_todo_item_handler)
+                    .build(),
+            )
+            .unwrap();
+
+        router
+            .insert(
+                "/api/metrics",
+                MethodRouter::new().get(serve_metrics).build(),
+            )
+            .unwrap();
+
+        router
+    })
+}

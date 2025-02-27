@@ -1,0 +1,46 @@
+{
+  "name": "@dfinity/http-auth",
+  "version": "0.0.0",
+  "description": "Client side support for ICP HTTP authentication",
+  "author": "DFINITY Stiftung",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/dfinity/http-auths#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dfinity/http-auth.git",
+    "directory": "packages/http-auth-js"
+  },
+  "bugs": {
+    "url": "https://github.com/dfinity/http-auth/issues"
+  },
+  "keywords": [
+    "internet",
+    "computer",
+    "icp",
+    "dfinity",
+    "http",
+    "auth",
+    "authentication"
+  ],
+  "main": "./dist/http-auth.umd.js",
+  "module": "./dist/http-auth.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/http-auth.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/http-auth.umd.js"
+      }
+    }
+  },
+  "scripts": {
+    "build": "vite build && tsc -p ./tsconfig.types.json",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage"
+  }
+}
