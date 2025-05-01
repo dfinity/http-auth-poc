@@ -2,6 +2,7 @@
 
 ```shell
 pnpm i
+dfx deps pull
 ```
 
 ```shell
@@ -9,7 +10,8 @@ dfx start --background --clean
 ```
 
 ```shell
-dfx deploy
+dfx deps deploy
+./scripts/local_deploy.sh
 ```
 
 ```shell

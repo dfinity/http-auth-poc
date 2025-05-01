@@ -8,14 +8,15 @@
   },
   "packageManager": "pnpm@9.12.3+sha256.24235772cc4ac82a62627cd47f834c72667a2ce87799a846ec4e8e555e2d4b8b",
   "scripts": {
-    "start": "tsx ./src/client/index.ts"
+    "start": "pnpm --filter todo-app-frontend start",
+    "build": "pnpm -r build"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",
     "@types/node": "^22.10.2",
-    "vite": "^6.1.0",
-    "vitest": "^3.0.5",
+    "prettier": "^3.4.2",
     "typescript": "^5.7.3",
-    "prettier": "^3.4.2"
+    "vite": "^6.1.0",
+    "vitest": "^3.0.5"
   }
 }

@@ -5,4 +5,4 @@ ROOT_KEY=$(
     | sed 's/,/;/g'
 )
 
-dfx deploy todo_app_backend --argument '(opt vec '"$ROOT_KEY"')' --mode reinstall
+dfx deploy todo_app_backend --argument '(opt vec '"$ROOT_KEY"')' --mode reinstall --yes

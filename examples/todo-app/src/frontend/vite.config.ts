@@ -11,6 +11,8 @@ export default defineConfig({
   build: {
     target: 'esnext',
   },
+  envDir: '../../../..',
+  envPrefix: ['VITE_', 'DFX_', 'CANISTER_ID_'],
   server: {
     port: 3000,
     proxy: {
