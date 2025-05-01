@@ -1,6 +1,7 @@
 import { epoch, isNil, isNotNil } from './util';
 import { base64Encode } from './base64';
 import { generateNonce, sha256 } from './crypto';
+import { DelegationChain } from '@dfinity/identity';
 
 // [TODO] - make expiration time configurable
 const EXPIRATION_TIME = 5 * 60 * 1_000; // 5 minutes
@@ -156,15 +157,4 @@ function addMessageSignatureHeader(req: Request, headerName: string): string {
   }
 
   return `"${headerName}": ${headerValue}\n`;
-}
-
-export interface DelegationChain {
-  publicKey: Uint8Array;
-  delegations: {
-    delegation: {
-      pubkey: Uint8Array;
-      expiration: bigint;
-    };
-    signature: Uint8Array;
-  }[];
 }
