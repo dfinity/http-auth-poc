@@ -100,7 +100,7 @@ async function createTodo(auth: LoginResponse | undefined): Promise<void> {
 async function loginWithII(
   authClient: AuthClient,
 ): Promise<LoginResponse | undefined> {
-  return new Promise((resolve, reject) => {
+  return await new Promise((resolve, reject) => {
     authClient.login({
       identityProvider:
         DFX_NETWORK !== 'ic'
@@ -122,7 +122,7 @@ const App: Component = () => {
   const [todos, { refetch: refetchTodos }] = createResource(auth, fetchTodos);
   const [isCreateLoading, setIsCreateLoading] = createSignal(false);
 
-  createEffect(async () => {
+  createEffect(() => {
     // load auth status on render
     const authClient = getAuthClient();
     setAuth(authFromAuthClient(authClient));
@@ -161,8 +161,8 @@ const App: Component = () => {
                 const authClient = getAuthClient();
                 if (authClient) {
                   await authClient.logout();
+                  setAuth(undefined);
                 }
-                setAuth(undefined);
               }}
             >
               Logout
