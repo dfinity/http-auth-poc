@@ -1,0 +1,18 @@
+{
+  "name": "insomnia-plugin-ic-http-auth",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "insomnia": {
+    "name": "ic-http-auth",
+    "description": "HTTP Auth plugin for the Internet Computer"
+  },
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "vite build && tsc -p ./tsconfig.types.json",
+    "publish-plugin": "mkdir -p \"$INSOMNIA_PLUGINS_PATH/insomnia-plugin-ic-http-auth\" && cp ./dist/main.js \"$INSOMNIA_PLUGINS_PATH/insomnia-plugin-ic-http-auth/main.js\" && cp ./package.json \"$INSOMNIA_PLUGINS_PATH/insomnia-plugin-ic-http-auth/package.json\""
+  },
+  "dependencies": {
+    "@dfinity/http-auth": "workspace:*"
+  }
+}
