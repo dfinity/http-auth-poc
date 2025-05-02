@@ -1,4 +1,5 @@
 use crate::api::ApiResponse;
+use candid::Principal;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize)]
@@ -25,4 +26,10 @@ pub type UpdateTodoItemResponse = ApiResponse;
 
 pub type DeleteTodoItemResponse = ApiResponse;
 
-pub type ListTodosResponse = ApiResponse<Vec<TodoItem>>;
+#[derive(Debug, Clone, Serialize)]
+pub struct ListTodosResponseBody {
+    pub todos: Vec<TodoItem>,
+    pub user_principal: Principal,
+}
+
+pub type ListTodosResponse = ApiResponse<ListTodosResponseBody>;

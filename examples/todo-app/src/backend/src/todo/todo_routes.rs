@@ -1,6 +1,6 @@
 use super::todo_types::{
     CreateTodoItemRequest, CreateTodoItemResponse, DeleteTodoItemResponse, ListTodosResponse,
-    TodoItem, UpdateTodoItemRequest, UpdateTodoItemResponse,
+    ListTodosResponseBody, TodoItem, UpdateTodoItemRequest, UpdateTodoItemResponse,
 };
 use crate::{api::json_decode, root_key::with_root_key};
 use ic_http_auth::validate_http_signature_headers;
@@ -37,7 +37,12 @@ pub fn list_todo_items_handler(req: &HttpRequest, _params: &Params) -> HttpRespo
             .map(|(_, todo)| todo.clone())
             .collect::<Vec<_>>();
 
-        ListTodosResponse::ok(user_todos)
+        let data = ListTodosResponseBody {
+            todos: user_todos,
+            user_principal: jwt.principal,
+        };
+
+        ListTodosResponse::ok(data)
     })
 }
 
