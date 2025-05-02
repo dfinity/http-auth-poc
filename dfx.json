@@ -17,8 +17,8 @@
         "pnpm -F todo-app-frontend build",
         "cargo build --target wasm32-unknown-unknown --release -p todo_app_backend --locked"
       ],
-      "gzip": false,
-      "shrink": false,
+      "gzip": true,
+      "shrink": true,
       "optimize": "cycles",
       "frontend": {}
     },

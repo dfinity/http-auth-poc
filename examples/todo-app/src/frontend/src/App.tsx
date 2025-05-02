@@ -103,9 +103,9 @@ async function loginWithII(
   return await new Promise((resolve, reject) => {
     authClient.login({
       identityProvider:
-        DFX_NETWORK !== 'ic'
-          ? 'http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:8000'
-          : 'https://identity.internetcomputer.org',
+        DFX_NETWORK === 'ic'
+          ? 'https://identity.internetcomputer.org'
+          : 'http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:8000',
       onSuccess: () => {
         resolve(authFromAuthClient(authClient));
       },
