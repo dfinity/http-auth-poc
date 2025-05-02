@@ -1,8 +1,14 @@
 import { addHttpMessageSignatureToRequest } from '@dfinity/http-auth';
 import type { RequestHook, InsomniaContext } from './insomnia';
-import { exportKeyPair, generateKeyPair, importKeyPair } from './crypto';
+import {
+  exportKeyPair,
+  generateKeyPair,
+  importKeyPair,
+  importKeyPairFromPem,
+} from './crypto';
 
 const KEY_PAIR_STORE_KEY = 'ic-http-auth-key-pair';
+const ENVIRONMENT_VARIABLE_NAME = 'identity';
 
 const generateKeyPairAndStore = async (
   context: InsomniaContext,
@@ -17,7 +23,9 @@ const generateKeyPairAndStore = async (
   return keyPair;
 };
 
-const getKeyPair = async (context: InsomniaContext): Promise<CryptoKeyPair> => {
+const getOrCreateKeyPairInStorage = async (
+  context: InsomniaContext,
+): Promise<CryptoKeyPair> => {
   const rawKeyPair = await context.store.getItem(KEY_PAIR_STORE_KEY);
   let keyPair: CryptoKeyPair;
   if (!rawKeyPair) {
@@ -36,9 +44,24 @@ const getKeyPair = async (context: InsomniaContext): Promise<CryptoKeyPair> => {
   return keyPair;
 };
 
+const loadKeyPair = async (
+  context: InsomniaContext,
+): Promise<CryptoKeyPair> => {
+  let keyPair: CryptoKeyPair;
+  const envPrivateKeyPem = context.request.getEnvironmentVariable(
+    ENVIRONMENT_VARIABLE_NAME,
+  );
+  if (envPrivateKeyPem) {
+    keyPair = await importKeyPairFromPem(envPrivateKeyPem);
+  } else {
+    keyPair = await getOrCreateKeyPairInStorage(context);
+  }
+  return keyPair;
+};
+
 const requestHooks: RequestHook[] = [
   async context => {
-    const keyPair = await getKeyPair(context);
+    const keyPair = await loadKeyPair(context);
     const request = new Request(context.request.getUrl(), {
       method: context.request.getMethod(),
       headers: context.request
