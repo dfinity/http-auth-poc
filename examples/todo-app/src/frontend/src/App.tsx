@@ -258,10 +258,6 @@ const App: Component = () => {
   const [isCreateLoading, setIsCreateLoading] = createSignal(false);
   const [newTodoTitle, setNewTodoTitle] = createSignal('');
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null);
-  const [searchTodoId, setSearchTodoId] = createSignal<string>('');
-  const [isSearching, setIsSearching] = createSignal(false);
-  const [searchResult, setSearchResult] = createSignal<TodoItem | null>(null);
-  const [searchError, setSearchError] = createSignal<string | null>(null);
 
   // Helper for optimistic updates
   const getNextTempId = (() => {
@@ -301,45 +297,6 @@ const App: Component = () => {
     }
   };
 
-  // Update the refreshTodosSilently function to preserve optimistic todos
-  const refreshTodosSilently = async () => {
-    if (!auth()) return;
-
-    try {
-      const req = new Request('/api/todos');
-      await addHttpMessageSignatureToRequest(
-        req,
-        auth()!.keyPair,
-        CANISTER_ID_TODO_APP_BACKEND,
-        auth()!.delegationChain,
-      );
-
-      const response = await fetch(req);
-      const res = await response.json();
-
-      if (response.ok && res.ok) {
-        // Preserve optimistic todos when updating with fresh data
-        mutateTodos(currentTodos => {
-          if (!currentTodos) return res.ok.data;
-
-          // Get any optimistic todos from the current state (they have negative IDs)
-          const optimisticTodos = currentTodos.todos.filter(
-            (todo: TodoItem) =>
-              todo.isOptimistic && typeof todo.id === 'number' && todo.id < 0,
-          );
-
-          // Combine server todos with optimistic todos
-          return {
-            ...res.ok.data,
-            todos: [...res.ok.data.todos, ...optimisticTodos],
-          };
-        });
-      }
-    } catch (error) {
-      console.error('Failed to silently refresh todos:', error);
-    }
-  };
-
   createEffect(() => {
     // load auth status on render
     const authClient = getAuthClient();
@@ -352,6 +309,7 @@ const App: Component = () => {
       const timer = setTimeout(() => setErrorMessage(null), 5000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   });
 
   return (
@@ -371,85 +329,6 @@ const App: Component = () => {
                   {errorMessage()}
                 </p>
               )}
-
-              <div class={styles.todoForm}>
-                <h3>Search Todo by ID</h3>
-                <div class={styles.todoInputGroup}>
-                  <input
-                    type="text"
-                    value={searchTodoId()}
-                    onInput={e => {
-                      setSearchTodoId(e.target.value);
-                      setSearchResult(null);
-                      setSearchError(null);
-                    }}
-                    placeholder="Enter todo ID"
-                    disabled={isSearching()}
-                  />
-                  <button
-                    onClick={async e => {
-                      e.preventDefault();
-                      const id = parseInt(searchTodoId());
-                      if (isNaN(id)) {
-                        setSearchError('Please enter a valid number');
-                        return;
-                      }
-
-                      setIsSearching(true);
-                      setSearchResult(null);
-                      setSearchError(null);
-
-                      try {
-                        const todo = await fetchTodoById(auth(), id);
-                        setIsSearching(false);
-
-                        if (todo) {
-                          setSearchResult(todo);
-                        } else {
-                          setSearchError(`No todo found with ID: ${id}`);
-                        }
-                      } catch (error: any) {
-                        setIsSearching(false);
-                        setSearchError(
-                          `Error: ${error?.message || 'Unknown error occurred'}`,
-                        );
-                      }
-                    }}
-                    disabled={isSearching() || !searchTodoId().trim()}
-                  >
-                    {isSearching() ? 'Searching...' : 'Search'}
-                  </button>
-                </div>
-
-                {searchError() && <p class={styles.error}>{searchError()}</p>}
-
-                {searchResult() && (
-                  <div class={styles.searchResult}>
-                    <h4>Found Todo:</h4>
-                    <div
-                      class={`${styles.todoItem} ${searchResult()?.completed ? styles.completed : ''}`}
-                    >
-                      <div class={styles.todoContent}>
-                        <input
-                          type="checkbox"
-                          checked={searchResult()?.completed}
-                          disabled
-                        />
-                        <span
-                          class={
-                            searchResult()?.completed
-                              ? styles.completedText
-                              : ''
-                          }
-                        >
-                          {searchResult()?.title}
-                        </span>
-                      </div>
-                      <span>ID: {searchResult()?.id}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
 
               <form
                 class={styles.todoForm}
