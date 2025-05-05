@@ -52,7 +52,19 @@ fn serve_api_route(req: &HttpRequest) -> HttpResponse<'static> {
     let router = get_api_router();
     let path = req.get_path().expect("Failed to parse request path");
 
-    let Ok(handler) = router.at(&path) else {
+    let route_match = router.at(&path);
+    ic_cdk::println!("[serve_api_route] Route match result: {:?}", route_match.is_ok());
+
+    let Ok(handler) = route_match else {
+        ic_cdk::println!("[serve_api_route] No route found for path: {}", path);
+        
+        // Log the specific matchit error
+        match route_match.err().unwrap() {
+            matchit::MatchError::NotFound => {
+                ic_cdk::println!("[serve_api_route] Error: Path not found in router");
+            }
+        }
+        
         return HttpResponse::not_found(b"Not Found", vec![]).build();
     };
 
@@ -77,9 +89,10 @@ fn get_api_router() -> &'static Router<MethodRouter> {
 
         router
             .insert(
-                "/api/todos/:id",
+                "/api/todos/{id}",
                 MethodRouter::new()
                     .patch(update_todo_item_handler)
+                    .put(update_todo_item_handler)
                     .delete(delete_todo_item_handler)
                     .build(),
             )
