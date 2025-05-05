@@ -31,6 +31,9 @@ type TodoItem = {
   id: number;
   title: string;
   completed: boolean;
+  isOptimistic?: boolean;
+  isDeleting?: boolean;
+  isUpdating?: boolean;
 };
 
 async function createAuthClient(): Promise<AuthClient> {
@@ -83,77 +86,100 @@ async function fetchTodos(auth: LoginResponse | undefined): Promise<any> {
 async function createTodo(
   auth: LoginResponse | undefined,
   title: string,
-): Promise<void> {
+): Promise<{ success: boolean; id?: number }> {
   if (!auth) {
-    return;
+    return { success: false };
   }
 
-  const req = new Request('/api/todos', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      title: title.trim(),
-    }),
-  });
-  await addHttpMessageSignatureToRequest(
-    req,
-    auth.keyPair,
-    CANISTER_ID_TODO_APP_BACKEND,
-    auth.delegationChain,
-  );
+  try {
+    const req = new Request('/api/todos', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: title.trim(),
+      }),
+    });
+    await addHttpMessageSignatureToRequest(
+      req,
+      auth.keyPair,
+      CANISTER_ID_TODO_APP_BACKEND,
+      auth.delegationChain,
+    );
 
-  await fetch(req);
+    const response = await fetch(req);
+    const result = await response.json();
+
+    if (response.ok && result.ok) {
+      return { success: true, id: result.ok.id };
+    }
+    return { success: false };
+  } catch (error) {
+    console.error('Failed to create todo:', error);
+    return { success: false };
+  }
 }
 
 async function toggleTodoCompleted(
   auth: LoginResponse | undefined,
   id: number,
   completed: boolean,
-): Promise<void> {
+): Promise<boolean> {
   if (!auth) {
-    return;
+    return false;
   }
 
-  const req = new Request(`/api/todos/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      completed: !completed,
-    }),
-  });
-  await addHttpMessageSignatureToRequest(
-    req,
-    auth.keyPair,
-    CANISTER_ID_TODO_APP_BACKEND,
-    auth.delegationChain,
-  );
+  try {
+    const req = new Request(`/api/todos/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        completed: !completed,
+      }),
+    });
+    await addHttpMessageSignatureToRequest(
+      req,
+      auth.keyPair,
+      CANISTER_ID_TODO_APP_BACKEND,
+      auth.delegationChain,
+    );
 
-  await fetch(req);
+    const response = await fetch(req);
+    return response.ok;
+  } catch (error) {
+    console.error('Failed to toggle todo:', error);
+    return false;
+  }
 }
 
 async function deleteTodo(
   auth: LoginResponse | undefined,
   id: number,
-): Promise<void> {
+): Promise<boolean> {
   if (!auth) {
-    return;
+    return false;
   }
 
-  const req = new Request(`/api/todos/${id}`, {
-    method: 'DELETE',
-  });
-  await addHttpMessageSignatureToRequest(
-    req,
-    auth.keyPair,
-    CANISTER_ID_TODO_APP_BACKEND,
-    auth.delegationChain,
-  );
+  try {
+    const req = new Request(`/api/todos/${id}`, {
+      method: 'DELETE',
+    });
+    await addHttpMessageSignatureToRequest(
+      req,
+      auth.keyPair,
+      CANISTER_ID_TODO_APP_BACKEND,
+      auth.delegationChain,
+    );
 
-  await fetch(req);
+    const response = await fetch(req);
+    return response.ok;
+  } catch (error) {
+    console.error('Failed to delete todo:', error);
+    return false;
+  }
 }
 
 async function loginWithII(
@@ -178,9 +204,17 @@ async function loginWithII(
 const App: Component = () => {
   const [getAuthClient] = createResource<AuthClient>(createAuthClient);
   const [auth, setAuth] = createSignal<LoginResponse>();
-  const [todos, { refetch: refetchTodos }] = createResource(auth, fetchTodos);
+  const [todos, { refetch: refetchTodos, mutate: mutateTodos }] =
+    createResource(auth, fetchTodos);
   const [isCreateLoading, setIsCreateLoading] = createSignal(false);
   const [newTodoTitle, setNewTodoTitle] = createSignal('');
+  const [errorMessage, setErrorMessage] = createSignal<string | null>(null);
+
+  // Helper for optimistic updates
+  const getNextTempId = (() => {
+    let tempId = -1;
+    return () => tempId--;
+  })();
 
   createEffect(() => {
     // load auth status on render
@@ -188,10 +222,18 @@ const App: Component = () => {
     setAuth(authFromAuthClient(authClient));
   });
 
+  // Clear error message after 5 seconds
+  createEffect(() => {
+    if (errorMessage()) {
+      const timer = setTimeout(() => setErrorMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  });
+
   return (
     <div class={styles.App}>
       <header>
-        <h1>Todo App</h1>
+        <h1>Http Auth Todo</h1>
       </header>
 
       <main>
@@ -200,17 +242,75 @@ const App: Component = () => {
             <section class={styles.todoSection}>
               <h2>Your Todos</h2>
 
+              {errorMessage() && (
+                <p role="alert" class={styles.error}>
+                  {errorMessage()}
+                </p>
+              )}
+
               <form
                 class={styles.todoForm}
                 onSubmit={e => {
                   e.preventDefault();
-                  if (!newTodoTitle().trim()) return;
+                  const title = newTodoTitle().trim();
+                  if (!title) return;
 
                   setIsCreateLoading(true);
-                  createTodo(auth(), newTodoTitle()).then(async () => {
+
+                  // Create a temporary ID for optimistic UI
+                  const tempId = getNextTempId();
+
+                  // Optimistically add the new todo
+                  mutateTodos(prev => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      todos: [
+                        ...prev.todos,
+                        {
+                          id: tempId,
+                          title,
+                          completed: false,
+                          isOptimistic: true,
+                        },
+                      ],
+                    };
+                  });
+
+                  setNewTodoTitle('');
+
+                  // Actually create the todo on the server
+                  createTodo(auth(), title).then(async result => {
                     setIsCreateLoading(false);
-                    setNewTodoTitle('');
-                    await refetchTodos();
+
+                    if (result.success) {
+                      // Update the optimistic todo with the real ID
+                      mutateTodos(prev => {
+                        if (!prev) return prev;
+                        return {
+                          ...prev,
+                          todos: prev.todos.map((todo: TodoItem) =>
+                            todo.id === tempId
+                              ? { ...todo, id: result.id!, isOptimistic: false }
+                              : todo,
+                          ),
+                        };
+                      });
+                    } else {
+                      // Remove the optimistic todo if creation failed
+                      mutateTodos(prev => {
+                        if (!prev) return prev;
+                        return {
+                          ...prev,
+                          todos: prev.todos.filter(
+                            (todo: TodoItem) => todo.id !== tempId,
+                          ),
+                        };
+                      });
+                      setErrorMessage(
+                        'Failed to create todo. Please try again.',
+                      );
+                    }
                   });
                 }}
               >
@@ -249,7 +349,11 @@ const App: Component = () => {
                       <For each={todos().todos}>
                         {(todo: TodoItem) => (
                           <li
-                            class={`${styles.todoItem} ${todo.completed ? styles.completed : ''}`}
+                            class={`${styles.todoItem} 
+                                    ${todo.completed ? styles.completed : ''} 
+                                    ${todo.isOptimistic ? styles.optimistic : ''} 
+                                    ${todo.isDeleting ? styles.deleting : ''} 
+                                    ${todo.isUpdating ? styles.updating : ''}`}
                           >
                             <div class={styles.todoContent}>
                               <input
@@ -257,13 +361,73 @@ const App: Component = () => {
                                 id={`todo-${todo.id}`}
                                 checked={todo.completed}
                                 onChange={() => {
+                                  // Optimistically update the completed status
+                                  mutateTodos(prev => {
+                                    if (!prev) return prev;
+                                    return {
+                                      ...prev,
+                                      todos: prev.todos.map((t: TodoItem) =>
+                                        t.id === todo.id
+                                          ? {
+                                              ...t,
+                                              completed: !t.completed,
+                                              isUpdating: true,
+                                            }
+                                          : t,
+                                      ),
+                                    };
+                                  });
+
+                                  // Actually update on the server
                                   toggleTodoCompleted(
                                     auth(),
                                     todo.id,
                                     todo.completed,
-                                  ).then(refetchTodos);
+                                  ).then(success => {
+                                    if (!success) {
+                                      // Revert to the original state if the update failed
+                                      mutateTodos(prev => {
+                                        if (!prev) return prev;
+                                        return {
+                                          ...prev,
+                                          todos: prev.todos.map(
+                                            (t: TodoItem) =>
+                                              t.id === todo.id
+                                                ? {
+                                                    ...t,
+                                                    completed: todo.completed,
+                                                    isUpdating: false,
+                                                  }
+                                                : t,
+                                          ),
+                                        };
+                                      });
+                                      setErrorMessage(
+                                        'Failed to update todo. Please try again.',
+                                      );
+                                    } else {
+                                      // Remove the isUpdating flag
+                                      mutateTodos(prev => {
+                                        if (!prev) return prev;
+                                        return {
+                                          ...prev,
+                                          todos: prev.todos.map(
+                                            (t: TodoItem) =>
+                                              t.id === todo.id
+                                                ? { ...t, isUpdating: false }
+                                                : t,
+                                          ),
+                                        };
+                                      });
+                                    }
+                                  });
                                 }}
                                 aria-label={`Mark "${todo.title}" as ${todo.completed ? 'incomplete' : 'complete'}`}
+                                disabled={
+                                  todo.isOptimistic ||
+                                  todo.isUpdating ||
+                                  todo.isDeleting
+                                }
                               />
                               <label
                                 for={`todo-${todo.id}`}
@@ -272,16 +436,61 @@ const App: Component = () => {
                                 }
                               >
                                 {todo.title}
+                                {todo.isOptimistic && ' (saving...)'}
                               </label>
                             </div>
                             <button
                               class={styles.deleteBtn}
                               onClick={() => {
-                                deleteTodo(auth(), todo.id).then(refetchTodos);
+                                // Optimistically mark as deleting
+                                mutateTodos(prev => {
+                                  if (!prev) return prev;
+                                  return {
+                                    ...prev,
+                                    todos: prev.todos.map((t: TodoItem) =>
+                                      t.id === todo.id
+                                        ? { ...t, isDeleting: true }
+                                        : t,
+                                    ),
+                                  };
+                                });
+
+                                // Actually delete on the server
+                                deleteTodo(auth(), todo.id).then(success => {
+                                  if (success) {
+                                    // Remove from the list if successfully deleted
+                                    mutateTodos(prev => {
+                                      if (!prev) return prev;
+                                      return {
+                                        ...prev,
+                                        todos: prev.todos.filter(
+                                          (t: TodoItem) => t.id !== todo.id,
+                                        ),
+                                      };
+                                    });
+                                  } else {
+                                    // Remove the isDeleting flag if deletion failed
+                                    mutateTodos(prev => {
+                                      if (!prev) return prev;
+                                      return {
+                                        ...prev,
+                                        todos: prev.todos.map((t: TodoItem) =>
+                                          t.id === todo.id
+                                            ? { ...t, isDeleting: false }
+                                            : t,
+                                        ),
+                                      };
+                                    });
+                                    setErrorMessage(
+                                      'Failed to delete todo. Please try again.',
+                                    );
+                                  }
+                                });
                               }}
                               aria-label={`Delete todo: ${todo.title}`}
+                              disabled={todo.isOptimistic || todo.isDeleting}
                             >
-                              Delete
+                              {todo.isDeleting ? 'Deleting...' : 'Delete'}
                             </button>
                           </li>
                         )}
