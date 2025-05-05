@@ -3,69 +3,173 @@ import { base64Encode } from './base64';
 import { generateNonce, sha256 } from './crypto';
 import { DelegationChain } from '@dfinity/identity';
 
-// [TODO] - make expiration time configurable
-const EXPIRATION_TIME = 5 * 60 * 1_000; // 5 minutes
+const DEFAULT_EXPIRATION_TIME_MS = 5 * 60 * 1_000; // 5 minutes
+const DEFAULT_SIG_NAME = 'sig';
+
+const SIGNATURE_HEADER_NAME = 'signature';
+const SIGNATURE_INPUT_HEADER_NAME = 'signature-input';
+const SIGNATURE_KEY_HEADER_NAME = 'signature-key';
+const CONTENT_DIGEST_HEADER_NAME = 'content-digest';
+
+export function signatureTimestamps(
+  expirationTimeMs = DEFAULT_EXPIRATION_TIME_MS,
+): {
+  created: number;
+  expires: number;
+} {
+  const createdDate = new Date();
+  const expirationDate = new Date(createdDate.getTime() + expirationTimeMs);
+  return {
+    created: epoch(createdDate),
+    expires: epoch(expirationDate),
+  };
+}
+
+export type HttpMessageSignatureRequestParams = {
+  canisterId: string;
+  keyPair: CryptoKeyPair;
+  delegationChain?: DelegationChain;
+  sigName?: string | null;
+  tag?: string | null;
+};
 
 export async function addHttpMessageSignatureToRequest(
   req: Request,
-  keyPair: CryptoKeyPair,
-  canisterId: string,
-  delegationChain?: DelegationChain,
-  sigName?: string | null,
-  tag?: string | null,
-): Promise<void> {
-  // [TODO] - only do this if the header is not already present
-  await addContentDigestHeader(req);
-
-  const nonce = generateNonce();
-
-  const createdDate = new Date();
-  const expirationDate = new Date(createdDate.getTime() + EXPIRATION_TIME);
-  const created = epoch(createdDate);
-  const expires = epoch(expirationDate);
-
-  await addHttpMessageSignatureHeaders(
-    req,
+  {
     keyPair,
-    nonce,
-    created,
-    expires,
-    canisterId,
     delegationChain,
+    canisterId,
     sigName,
     tag,
+  }: HttpMessageSignatureRequestParams,
+): Promise<void> {
+  const nonce = generateNonce();
+  const { created, expires } = signatureTimestamps();
+
+  const signatureHeaders = await getHttpMessageSignatureHeaders(
+    {
+      keyPair,
+      delegationChain,
+    },
+    {
+      url: req.url,
+      method: req.method,
+      headers: req.headers,
+      body: await req.clone().arrayBuffer(),
+      created,
+      expires,
+      canisterId,
+      nonce,
+      sigName,
+      tag,
+    },
   );
+
+  signatureHeaders.forEach(([headerName, headerValue]) => {
+    req.headers.set(headerName, headerValue);
+  });
 }
 
-async function addContentDigestHeader(req: Request) {
-  const hash = await sha256(await req.clone().arrayBuffer());
+async function contentDigestHeader(
+  body: ArrayBuffer | ArrayBufferView | string,
+): Promise<[string, string]> {
+  const hash = await sha256(body);
   const hashBase64 = base64Encode(new Uint8Array(hash));
 
-  req.headers.set('Content-Digest', `SHA-256=${hashBase64}`);
+  return [CONTENT_DIGEST_HEADER_NAME, `SHA-256=${hashBase64}`];
 }
 
-async function addHttpMessageSignatureHeaders(
-  req: Request,
-  keyPair: CryptoKeyPair,
-  nonce: string,
-  created: number,
-  expires: number,
-  // [TODO] - use this
-  _canisterId: string,
-  delegationChain?: DelegationChain | null,
-  sigName?: string | null,
-  tag?: string | null,
-): Promise<void> {
-  const url = new URL(req.url);
-  sigName = sigName ?? 'sig';
+async function addContentDigestHeader(
+  headers: Headers,
+  body: ArrayBuffer | ArrayBufferView | string,
+): Promise<string> {
+  const existingHeaderValue = headers.get(CONTENT_DIGEST_HEADER_NAME);
+  // no need to add the content-digest header if it's already present
+  if (existingHeaderValue) {
+    return existingHeaderValue;
+  }
+
+  const [headerName, headerValue] = await contentDigestHeader(body);
+  headers.set(headerName, headerValue);
+  return headerValue;
+}
+
+interface SignatureKeyHeader {
+  pubKey: string;
+  delegationChain?: SignatureKeyHeaderDelegationChain | null;
+}
+
+interface SignatureKeyHeaderDelegationChain {
+  pubKey: string;
+  delegations: SignatureKeyHeaderDelegation[];
+}
+
+interface SignatureKeyHeaderDelegation {
+  delegation: {
+    pubKey: string;
+    expiration: string;
+    targets?: string[] | null;
+  };
+  sig: string;
+}
+
+function addMessageSignatureHeader(
+  headers: Headers,
+  headerName: string,
+): string {
+  headerName = headerName.toLowerCase();
+
+  const headerValue = headers.get(headerName);
+  if (isNil(headerValue)) {
+    throw new Error(`Required ${headerName} header is missing from request.`);
+  }
+
+  return `"${headerName}": ${headerValue}\n`;
+}
+
+export type HttpMessageSignatureIdentity = {
+  keyPair: CryptoKeyPair;
+  delegationChain?: DelegationChain;
+};
+
+export type HttpMessageSignatureParams = {
+  url: string | URL;
+  method: string;
+  headers: Headers;
+  body: ArrayBuffer | ArrayBufferView | string;
+  created: number;
+  expires: number;
+  nonce: string;
+  tag?: string | null;
+  sigName?: string | null;
+  canisterId: string;
+};
+
+export async function getHttpMessageSignatureHeaders(
+  { keyPair, delegationChain }: HttpMessageSignatureIdentity,
+  {
+    url: urlParam,
+    method,
+    headers,
+    body,
+    created,
+    expires,
+    nonce,
+    tag,
+    sigName = DEFAULT_SIG_NAME,
+    // [TODO] - add a component that represents the target canister
+    canisterId: _canisterId,
+  }: HttpMessageSignatureParams,
+): Promise<[string, string][]> {
+  const url = new URL(urlParam);
+
+  const contentDigestHeaderValue = await addContentDigestHeader(headers, body);
 
   let sigInput = '(';
   let sigBase = '';
 
-  // [TODO] - add a component that represents the target canister
-
   sigInput += `"@method"`;
-  sigBase += `"@method": ${req.method.toUpperCase()}\n`;
+  sigBase += `"@method": ${method.toUpperCase()}\n`;
 
   sigInput += ` "@path"`;
   sigBase += `"@path": ${url.pathname}\n`;
@@ -73,11 +177,11 @@ async function addHttpMessageSignatureHeaders(
   sigInput += ` "@query"`;
   sigBase += `"@query": ${url.search}\n`;
 
-  sigInput += ` "content-digest"`;
-  sigBase += addMessageSignatureHeader(req, 'content-digest');
+  sigInput += ` "${CONTENT_DIGEST_HEADER_NAME}"`;
+  sigBase += addMessageSignatureHeader(headers, CONTENT_DIGEST_HEADER_NAME);
 
   sigInput += ')';
-  sigInput += `;keyid="header:signature-key"`;
+  sigInput += `;keyid="header:${SIGNATURE_KEY_HEADER_NAME}"`;
   sigInput += `;alg="ecdsa-p256-sha256"`;
   sigInput += `;created=${created}`;
   sigInput += `;expires=${expires}`;
@@ -104,7 +208,7 @@ async function addHttpMessageSignatureHeaders(
   const publicKey = await crypto.subtle.exportKey('spki', keyPair.publicKey);
   const encodedPublicKey = base64Encode(publicKey);
 
-  let sigKeyHeader: SignatureKeyHeader = {
+  const sigKeyHeader: SignatureKeyHeader = {
     pubKey: encodedPublicKey,
   };
   if (isNotNil(delegationChain)) {
@@ -122,39 +226,12 @@ async function addHttpMessageSignatureHeaders(
     };
   }
 
-  let encodedSigKeyHeader = base64Encode(JSON.stringify(sigKeyHeader));
+  const encodedSigKeyHeader = base64Encode(JSON.stringify(sigKeyHeader));
 
-  req.headers.set('Signature', `${sigName}=:${encodedSig}:`);
-  req.headers.set('Signature-Input', `${sigName}=${sigInput}`);
-  req.headers.set('Signature-Key', `${sigName}=:${encodedSigKeyHeader}:`);
-}
-
-interface SignatureKeyHeader {
-  pubKey: string;
-  delegationChain?: SignatureKeyHeaderDelegationChain | null;
-}
-
-interface SignatureKeyHeaderDelegationChain {
-  pubKey: string;
-  delegations: SignatureKeyHeaderDelegation[];
-}
-
-interface SignatureKeyHeaderDelegation {
-  delegation: {
-    pubKey: string;
-    expiration: string;
-    targets?: string[] | null;
-  };
-  sig: string;
-}
-
-function addMessageSignatureHeader(req: Request, headerName: string): string {
-  headerName = headerName.toLowerCase();
-
-  const headerValue = req.headers.get(headerName);
-  if (isNil(headerValue)) {
-    throw new Error(`Required ${headerName} header is missing from request.`);
-  }
-
-  return `"${headerName}": ${headerValue}\n`;
+  return [
+    [SIGNATURE_HEADER_NAME, `${sigName}=:${encodedSig}:`],
+    [SIGNATURE_INPUT_HEADER_NAME, `${sigName}=${sigInput}`],
+    [SIGNATURE_KEY_HEADER_NAME, `${sigName}=:${encodedSigKeyHeader}:`],
+    [CONTENT_DIGEST_HEADER_NAME, contentDigestHeaderValue],
+  ];
 }

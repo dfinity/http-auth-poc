@@ -61,12 +61,11 @@ async function fetchTodos(auth: LoginResponse | undefined): Promise<any> {
   }
 
   const req = new Request('/api/todos');
-  await addHttpMessageSignatureToRequest(
-    req,
-    auth.keyPair,
-    CANISTER_ID_TODO_APP_BACKEND,
-    auth.delegationChain,
-  );
+  await addHttpMessageSignatureToRequest(req, {
+    keyPair: auth.keyPair,
+    delegationChain: auth.delegationChain,
+    canisterId: CANISTER_ID_TODO_APP_BACKEND,
+  });
 
   const response = await fetch(req);
   const res = await response.json();
@@ -87,12 +86,11 @@ async function createTodo(auth: LoginResponse | undefined): Promise<void> {
       title: 'New todo',
     }),
   });
-  await addHttpMessageSignatureToRequest(
-    req,
-    auth.keyPair,
-    CANISTER_ID_TODO_APP_BACKEND,
-    auth.delegationChain,
-  );
+  await addHttpMessageSignatureToRequest(req, {
+    keyPair: auth.keyPair,
+    delegationChain: auth.delegationChain,
+    canisterId: CANISTER_ID_TODO_APP_BACKEND,
+  });
 
   await fetch(req);
 }
