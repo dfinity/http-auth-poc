@@ -20,14 +20,8 @@ fn init(root_key: Option<Vec<u8>>) {
     certify_all_assets();
 }
 
-#[pre_upgrade]
-fn pre_upgrade() {
-    todo::persist_data_pre_upgrade();
-}
-
 #[post_upgrade]
 fn post_upgrade() {
-    todo::persist_data_post_upgrade();
     certify_all_assets();
 }
 

@@ -24,17 +24,6 @@ fn todos() -> &'static Mutex<UserTodoMap> {
     INSTANCE.get_or_init(|| Mutex::new(UserTodoMap::new()))
 }
 
-// Function to get all todos for stable storage persistence
-pub fn get_all_todos() -> UserTodoMap {
-    todos().lock().unwrap().clone()
-}
-
-// Function to set all todos from stable storage
-pub fn set_all_todos(data: UserTodoMap) {
-    let mut all_todos = todos().lock().unwrap();
-    *all_todos = data;
-}
-
 pub fn get_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpResponse<'static> {
     with_root_key(|root_key| {
         let jwt = validate_http_signature_headers(req, root_key).unwrap();
