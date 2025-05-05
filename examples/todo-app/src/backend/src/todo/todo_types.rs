@@ -1,8 +1,8 @@
 use crate::api::ApiResponse;
-use candid::Principal;
+use candid::{CandidType, Principal};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, CandidType)]
 pub struct TodoItem {
     pub id: u32,
     pub title: String,
@@ -25,6 +25,8 @@ pub struct UpdateTodoItemRequest {
 pub type UpdateTodoItemResponse = ApiResponse;
 
 pub type DeleteTodoItemResponse = ApiResponse;
+
+pub type GetTodoItemResponse = ApiResponse<TodoItem>;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ListTodosResponseBody {

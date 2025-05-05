@@ -20,8 +20,14 @@ fn init(root_key: Option<Vec<u8>>) {
     certify_all_assets();
 }
 
+#[pre_upgrade]
+fn pre_upgrade() {
+    todo::persist_data_pre_upgrade();
+}
+
 #[post_upgrade]
 fn post_upgrade() {
+    todo::persist_data_post_upgrade();
     certify_all_assets();
 }
 
@@ -91,6 +97,7 @@ fn get_api_router() -> &'static Router<MethodRouter> {
             .insert(
                 "/api/todos/{id}",
                 MethodRouter::new()
+                    .get(get_todo_item_handler)
                     .patch(update_todo_item_handler)
                     .put(update_todo_item_handler)
                     .delete(delete_todo_item_handler)
