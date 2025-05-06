@@ -1,4 +1,4 @@
-import { addHttpMessageSignatureToRequest } from '@dfinity/http-auth';
+import { getHttpMessageSignatureHeaders } from '@dfinity/http-auth';
 import type { RequestHook, InsomniaContext } from './insomnia';
 import {
   exportKeyPair,
@@ -62,31 +62,21 @@ const loadKeyPair = async (
 const requestHooks: RequestHook[] = [
   async context => {
     const keyPair = await loadKeyPair(context);
-    const request = new Request(context.request.getUrl(), {
-      method: context.request.getMethod(),
-      headers: context.request
-        .getHeaders()
-        .map(({ name, value }) => [name, value]),
-      body: context.request.getBody().text,
+    const signatureHeaders = await getHttpMessageSignatureHeaders(
+      { keyPair },
+      {
+        url: context.request.getUrl(),
+        method: context.request.getMethod(),
+        headers: new Headers(
+          context.request.getHeaders().map(({ name, value }) => [name, value]),
+        ),
+        body: context.request.getBody().text || '',
+        canisterId: 'bkyz2-fmaaa-aaaaa-qaaaq-cai',
+      },
+    );
+    signatureHeaders.forEach(([headerName, headerValue]) => {
+      context.request.setHeader(headerName, headerValue);
     });
-    await addHttpMessageSignatureToRequest(
-      request,
-      keyPair,
-      'bkyz2-fmaaa-aaaaa-qaaaq-cai',
-    );
-    context.request.setHeader(
-      'Content-Digest',
-      request.headers.get('Content-Digest')!,
-    );
-    context.request.setHeader('Signature', request.headers.get('Signature')!);
-    context.request.setHeader(
-      'Signature-Input',
-      request.headers.get('Signature-Input')!,
-    );
-    context.request.setHeader(
-      'Signature-Key',
-      request.headers.get('Signature-Key')!,
-    );
   },
 ];
 

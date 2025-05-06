@@ -71,12 +71,11 @@ async function fetchTodos(auth: LoginResponse | undefined): Promise<any> {
   }
 
   const req = new Request('/api/todos');
-  await addHttpMessageSignatureToRequest(
-    req,
-    auth.keyPair,
-    CANISTER_ID_TODO_APP_BACKEND,
-    auth.delegationChain,
-  );
+  await addHttpMessageSignatureToRequest(req, {
+    keyPair: auth.keyPair,
+    delegationChain: auth.delegationChain,
+    canisterId: CANISTER_ID_TODO_APP_BACKEND,
+  });
 
   const response = await fetch(req);
   const res = await response.json();
@@ -93,12 +92,11 @@ async function fetchTodoById(
 
   try {
     const req = new Request(`/api/todos/${id}`);
-    await addHttpMessageSignatureToRequest(
-      req,
-      auth.keyPair,
-      CANISTER_ID_TODO_APP_BACKEND,
-      auth.delegationChain,
-    );
+    await addHttpMessageSignatureToRequest(req, {
+      keyPair: auth.keyPair,
+      delegationChain: auth.delegationChain,
+      canisterId: CANISTER_ID_TODO_APP_BACKEND,
+    });
 
     const response = await fetch(req);
     if (!response.ok) {
@@ -132,12 +130,11 @@ async function createTodo(
         title: title.trim(),
       }),
     });
-    await addHttpMessageSignatureToRequest(
-      req,
-      auth.keyPair,
-      CANISTER_ID_TODO_APP_BACKEND,
-      auth.delegationChain,
-    );
+    await addHttpMessageSignatureToRequest(req, {
+      keyPair: auth.keyPair,
+      delegationChain: auth.delegationChain,
+      canisterId: CANISTER_ID_TODO_APP_BACKEND,
+    });
 
     const response = await fetch(req);
     const result = await response.json();
@@ -176,12 +173,11 @@ async function toggleTodoCompleted(
         completed: !completed,
       }),
     });
-    await addHttpMessageSignatureToRequest(
-      req,
-      auth.keyPair,
-      CANISTER_ID_TODO_APP_BACKEND,
-      auth.delegationChain,
-    );
+    await addHttpMessageSignatureToRequest(req, {
+      keyPair: auth.keyPair,
+      delegationChain: auth.delegationChain,
+      canisterId: CANISTER_ID_TODO_APP_BACKEND,
+    });
 
     const response = await fetch(req);
     if (response.ok) {
@@ -210,12 +206,11 @@ async function deleteTodo(
     const req = new Request(`/api/todos/${id}`, {
       method: 'DELETE',
     });
-    await addHttpMessageSignatureToRequest(
-      req,
-      auth.keyPair,
-      CANISTER_ID_TODO_APP_BACKEND,
-      auth.delegationChain,
-    );
+    await addHttpMessageSignatureToRequest(req, {
+      keyPair: auth.keyPair,
+      delegationChain: auth.delegationChain,
+      canisterId: CANISTER_ID_TODO_APP_BACKEND,
+    });
 
     const response = await fetch(req);
     if (response.ok) {
