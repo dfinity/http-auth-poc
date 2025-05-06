@@ -32,14 +32,10 @@ pub fn get_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpResponse
             ic_cdk::println!("[get_todo_item_handler] Missing ID parameter");
             return HttpResponse::bad_request(b"Missing ID parameter", vec![]).build();
         };
-        let id_parse_result = id_str.parse::<u32>();
-        
-        if id_parse_result.is_err() {
+        let Ok(id) = id_str.parse::<u32>() else {
             ic_cdk::println!("[get_todo_item_handler] Invalid ID format: {}", id_str);
             return HttpResponse::bad_request(b"Invalid ID format", vec![]).build();
-        }
-        
-        let id = id_parse_result.unwrap();
+        };
         let user_id = jwt.principal.to_text();
         
         let all_todos = todos().lock().unwrap();
