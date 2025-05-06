@@ -11,9 +11,7 @@ const SIGNATURE_INPUT_HEADER_NAME = 'signature-input';
 const SIGNATURE_KEY_HEADER_NAME = 'signature-key';
 const CONTENT_DIGEST_HEADER_NAME = 'content-digest';
 
-export function signatureTimestamps(
-  expirationTimeMs = DEFAULT_EXPIRATION_TIME_MS,
-): {
+function signatureTimestamps(expirationTimeMs: number): {
   created: number;
   expires: number;
 } {
@@ -28,24 +26,25 @@ export function signatureTimestamps(
 export type HttpMessageSignatureRequestParams = {
   canisterId: string;
   keyPair: CryptoKeyPair;
+  expirationTimeMs?: number;
   delegationChain?: DelegationChain;
   sigName?: string | null;
   tag?: string | null;
+  nonceBase64?: string | null;
 };
 
 export async function addHttpMessageSignatureToRequest(
   req: Request,
   {
-    keyPair,
-    delegationChain,
     canisterId,
+    keyPair,
+    expirationTimeMs,
+    delegationChain,
     sigName,
     tag,
+    nonceBase64,
   }: HttpMessageSignatureRequestParams,
 ): Promise<void> {
-  const nonce = generateNonce();
-  const { created, expires } = signatureTimestamps();
-
   const signatureHeaders = await getHttpMessageSignatureHeaders(
     {
       keyPair,
@@ -56,12 +55,11 @@ export async function addHttpMessageSignatureToRequest(
       method: req.method,
       headers: req.headers,
       body: await req.clone().arrayBuffer(),
-      created,
-      expires,
       canisterId,
-      nonce,
+      expirationTimeMs,
       sigName,
       tag,
+      nonceBase64,
     },
   );
 
@@ -137,12 +135,11 @@ export type HttpMessageSignatureParams = {
   method: string;
   headers: Headers;
   body: ArrayBuffer | ArrayBufferView | string;
-  created: number;
-  expires: number;
-  nonce: string;
+  canisterId: string;
+  expirationTimeMs?: number;
   tag?: string | null;
   sigName?: string | null;
-  canisterId: string;
+  nonceBase64?: string | null;
 };
 
 export async function getHttpMessageSignatureHeaders(
@@ -152,18 +149,20 @@ export async function getHttpMessageSignatureHeaders(
     method,
     headers,
     body,
-    created,
-    expires,
-    nonce,
-    tag,
-    sigName = DEFAULT_SIG_NAME,
     // [TODO] - add a component that represents the target canister
     canisterId: _canisterId,
+    tag,
+    sigName = DEFAULT_SIG_NAME,
+    expirationTimeMs = DEFAULT_EXPIRATION_TIME_MS,
+    nonceBase64,
   }: HttpMessageSignatureParams,
 ): Promise<[string, string][]> {
   const url = new URL(urlParam);
 
   const contentDigestHeaderValue = await addContentDigestHeader(headers, body);
+
+  const { created, expires } = signatureTimestamps(expirationTimeMs);
+  const nonce = nonceBase64 || generateNonce();
 
   let sigInput = '(';
   let sigBase = '';

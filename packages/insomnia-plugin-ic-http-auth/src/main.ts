@@ -1,8 +1,4 @@
-import {
-  generateNonce,
-  getHttpMessageSignatureHeaders,
-  signatureTimestamps,
-} from '@dfinity/http-auth';
+import { getHttpMessageSignatureHeaders } from '@dfinity/http-auth';
 import type { RequestHook, InsomniaContext } from './insomnia';
 import {
   exportKeyPair,
@@ -66,8 +62,6 @@ const loadKeyPair = async (
 const requestHooks: RequestHook[] = [
   async context => {
     const keyPair = await loadKeyPair(context);
-    const nonce = generateNonce();
-    const { created, expires } = signatureTimestamps();
     const signatureHeaders = await getHttpMessageSignatureHeaders(
       { keyPair },
       {
@@ -77,9 +71,6 @@ const requestHooks: RequestHook[] = [
           context.request.getHeaders().map(({ name, value }) => [name, value]),
         ),
         body: context.request.getBody().text || '',
-        created,
-        expires,
-        nonce,
         canisterId: 'bkyz2-fmaaa-aaaaa-qaaaq-cai',
       },
     );
