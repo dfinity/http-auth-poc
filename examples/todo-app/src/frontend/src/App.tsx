@@ -314,6 +314,12 @@ const App: Component = () => {
       </header>
 
       <main>
+        <div class={styles.devNote}>
+          <p>
+            💡 Developer Tip: Open your browser's dev tools to inspect the JSON
+            payloads and HTTP message signatures!
+          </p>
+        </div>
         <Switch>
           <Match when={auth()}>
             <section class={styles.todoSection}>
