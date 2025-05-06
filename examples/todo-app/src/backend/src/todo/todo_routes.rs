@@ -28,7 +28,10 @@ pub fn get_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpResponse
     with_root_key(|root_key| {
         let jwt = validate_http_signature_headers(req, root_key).unwrap();
         
-        let id_str = params.get("id").unwrap_or("0");
+        let Some(id_str) = params.get("id") else {
+            ic_cdk::println!("[get_todo_item_handler] Missing ID parameter");
+            return HttpResponse::bad_request(b"Missing ID parameter", vec![]).build();
+        };
         let id_parse_result = id_str.parse::<u32>();
         
         if id_parse_result.is_err() {
