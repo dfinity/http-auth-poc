@@ -29,6 +29,10 @@ impl MethodRouter {
         self.add_route(Method::PATCH, handler)
     }
 
+    pub fn put(self, handler: RouteHandler) -> Self {
+        self.add_route(Method::PUT, handler)
+    }
+
     pub fn delete(self, handler: RouteHandler) -> Self {
         self.add_route(Method::DELETE, handler)
     }
