@@ -1,0 +1,12 @@
+build_cmd:
+  cargo build --release --target wasm32-unknown-unknown -p todo_app_backend --features canbench-rs
+
+wasm_path:
+  ../../../../target/wasm32-unknown-unknown/release/todo_app_backend.wasm
+
+init_args:
+  # The Candid-serialized and hex-encoded argument containing the IC root key, obtained with these steps:
+  # 1. Parse the output of `dfx ping` to get the root key
+  # 2. Encode the root key using `didc encode '(opt vec $ROOT_KEY)'' --types '(opt blob)'`
+  # See the `scripts/local_deploy.sh` script for the full process
+  hex: 4449444c026e016d7b0100018501308182301d060d2b0601040182dc7c0503010201060c2b0601040182dc7c050302010361008b52b4994f94c7ce4be1c1542d7c81dc79fea17d49efe8fa42e8566373581d4b969c4a59e96a0ef51b711fe5027ec01601182519d0a788f4bfe388e593b97cd1d7e44904de79422430bca686ac8c21305b3397b5ba4d7037d17877312fb7ee34

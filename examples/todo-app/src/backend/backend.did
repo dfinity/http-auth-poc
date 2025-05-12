@@ -25,4 +25,6 @@ type HttpResponse = record {
 service : (opt blob) -> {
   http_request : (request : HttpRequest) -> (HttpResponse) query;
   http_request_update : (request : HttpUpdateRequest) -> (HttpResponse);
+
+  fibonacci : (n : nat32) -> (nat32) query;
 };
