@@ -1,12 +1,11 @@
 use crate::{
-    base64::base64_decode,
+    base64::{base64_decode, deserialize_base64_string_to_bytes},
     delegation::{validate_delegation_and_get_principal, DelegationChain},
-    parse_utils::{drop_separators, until_terminated},
+    parse_utils::{parse_http_sig, parse_http_sig_input, parse_http_sig_key},
     HttpAuthError, HttpAuthResult,
 };
 use candid::Principal;
 use ic_http_certification::HttpRequest;
-use nom::{bytes::complete::take_until, combinator::eof, multi::many0, IResult, Parser};
 use p256::{
     ecdsa::{signature::Verifier, Signature, VerifyingKey},
     pkcs8::{DecodePublicKey, EncodePublicKey},
@@ -19,61 +18,66 @@ pub struct HttpSignatureValidationData {
     pub principal: Principal,
 }
 
+/// The `Signature-Key` header. Use the `from_json` method to parse it from a string.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SignatureKeyHeader {
-    #[serde(rename = "pubKey")]
-    pub pub_key: String,
+    /// The DER-encoded public key.
+    #[serde(
+        rename = "pubKey",
+        deserialize_with = "deserialize_base64_string_to_bytes"
+    )]
+    pub pub_key: Vec<u8>,
     #[serde(rename = "delegationChain")]
     pub delegation_chain: Option<DelegationChain>,
+}
+
+impl TryFrom<&HashMap<String, String>> for SignatureKeyHeader {
+    type Error = HttpAuthError;
+
+    fn try_from(headers: &HashMap<String, String>) -> HttpAuthResult<Self> {
+        let sig_key_header_str = headers
+            .get("signature-key")
+            .ok_or_else(|| HttpAuthError::MissingSignatureKeyHeader)?;
+
+        let (_, http_sig_key) = parse_http_sig_key(sig_key_header_str)?;
+
+        let sig_key_bytes = base64_decode(&http_sig_key)
+            .map_err(|err| HttpAuthError::MalformedHttpSigKey(format!("{:?}", err)))?;
+        let sig_key_header = serde_json::from_slice::<SignatureKeyHeader>(&sig_key_bytes)
+            .map_err(|err| HttpAuthError::MalformedHttpSigKey(format!("{:?}", err)))?;
+
+        Ok(sig_key_header)
+    }
+}
+
+impl SignatureKeyHeader {
+    fn signature_pub_key_der(&self) -> HttpAuthResult<Vec<u8>> {
+        let public_key = PublicKey::from_public_key_der(&self.pub_key)
+            .map_err(|_| HttpAuthError::MalformedEcdsaPublicKey)
+            .unwrap();
+        let public_key_der = public_key
+            .to_public_key_der()
+            .map_err(|_| HttpAuthError::MalformedEcdsaPublicKey)
+            .unwrap()
+            .to_vec();
+
+        Ok(public_key_der)
+    }
 }
 
 pub fn validate_http_signature_headers(
     req: &HttpRequest,
     ic_root_key_raw: &[u8],
 ) -> HttpAuthResult<HttpSignatureValidationData> {
-    let req_headers: HashMap<_, _> = req
-        .headers()
-        .iter()
-        .map(|(k, v)| (k.to_lowercase(), v.clone()))
-        .collect();
+    let validation_input = HttpSignatureValidationInput::try_from(req)?;
 
-    let sig_header = req_headers
-        .get("signature")
-        .ok_or_else(|| HttpAuthError::MissingSignatureHeader)?;
-    let sig_input_header = req_headers
-        .get("signature-input")
-        .ok_or_else(|| HttpAuthError::MissingSignatureInputHeader)?;
-    let sig_key_header_str = req_headers
-        .get("signature-key")
-        .ok_or_else(|| HttpAuthError::MissingSignatureKeyHeader)?;
-
-    let (_, http_sig_key) = parse_http_sig_key(sig_key_header_str)?;
-
-    let sig_key_bytes = base64_decode(&http_sig_key).unwrap();
-    let sig_key_header = serde_json::from_slice::<SignatureKeyHeader>(&sig_key_bytes).unwrap();
-
-    let http_sig_key = base64_decode(&sig_key_header.pub_key)
-        .map_err(|_| HttpAuthError::MalformedEcdsaPublicKey)
-        .unwrap();
-    let public_key = PublicKey::from_public_key_der(&http_sig_key)
-        .map_err(|_| HttpAuthError::MalformedEcdsaPublicKey)
-        .unwrap();
-    let public_key_der = public_key
-        .to_public_key_der()
-        .map_err(|_| HttpAuthError::MalformedEcdsaPublicKey)
-        .unwrap()
-        .to_vec();
-    let verifying_key = VerifyingKey::from(public_key);
-
-    validate_http_sig(
-        req,
-        &req_headers,
-        sig_header,
-        sig_input_header,
-        verifying_key,
+    verify_sig(
+        &validation_input.payload,
+        &validation_input.signature,
+        validation_input.signature_pub_key(),
     )?;
 
-    if let Some(delegation_chain) = &sig_key_header.delegation_chain {
+    if let Some(delegation_chain) = validation_input.delegation_chain() {
         let principal = validate_delegation_and_get_principal(
             delegation_chain,
             "rdmx6-jaaaa-aaaaa-aaadq-cai",
@@ -84,79 +88,59 @@ pub fn validate_http_signature_headers(
         return Ok(HttpSignatureValidationData { principal });
     }
 
+    let public_key_der = validation_input.signature_pub_key_der()?;
+
     Ok(HttpSignatureValidationData {
         principal: Principal::self_authenticating(public_key_der),
     })
 }
 
-fn validate_http_sig(
-    req: &HttpRequest,
-    req_headers: &HashMap<String, String>,
-    http_sig: &str,
-    http_sig_input: &str,
-    verifying_key: VerifyingKey,
-) -> HttpAuthResult {
-    let (_, http_sig) = parse_http_sig(http_sig)?;
-    let http_sig = base64_decode(http_sig).unwrap();
-    let http_sig =
-        Signature::from_slice(&http_sig).map_err(|_| HttpAuthError::MalformedEcdsaSignature)?;
-
-    let (_, http_sig_input, http_sig_input_elems) = parse_http_sig_input(http_sig_input)?;
-    let payload = calculate_http_sig(req, req_headers, http_sig_input, http_sig_input_elems)?;
-
-    verifying_key
-        .verify(&payload, &http_sig)
-        .map_err(|e| HttpAuthError::JwtSignatureVerificationFailed(e.to_string()))?;
-
-    Ok(())
+struct HttpSignatureValidationInput {
+    /// The [SignatureKeyHeader] parsed from the `Signature-Key` header.
+    signature_key_header: SignatureKeyHeader,
+    /// The signature parsed from the `Signature` header.
+    signature: Vec<u8>,
+    /// The payload parsed from the `Signature-Input` header.
+    payload: Vec<u8>,
 }
 
-fn parse_http_sig(header_field: &str) -> HttpAuthResult<(&str, &str)> {
-    fn extract(i: &str) -> IResult<&str, (&str, &str)> {
-        let (i, sig_name) = until_terminated("=").parse(i)?;
-        let (i, sig) = drop_separators(':', ':', take_until(":")).parse(i)?;
+impl TryFrom<&HttpRequest<'_>> for HttpSignatureValidationInput {
+    type Error = HttpAuthError;
 
-        eof(i)?;
+    fn try_from(req: &HttpRequest) -> HttpAuthResult<Self> {
+        let headers = req
+            .headers()
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect();
 
-        Ok((i, (sig_name, sig)))
+        let signature = get_http_sig_bytes(&headers)?;
+        let signature_key_header = SignatureKeyHeader::try_from(&headers)?;
+        let payload = get_http_sig_input_payload(req, &headers)?;
+
+        Ok(Self {
+            signature_key_header,
+            signature,
+            payload,
+        })
     }
-
-    extract(header_field)
-        .map(|(_, e)| e)
-        .map_err(|e| HttpAuthError::MalformedHttpSig(e.to_string()))
 }
 
-fn parse_http_sig_input(http_sig_input: &str) -> HttpAuthResult<(&str, &str, Vec<&str>)> {
-    fn extract(i: &str) -> IResult<&str, (&str, &str, Vec<&str>)> {
-        let (sig_params, sig_name) = until_terminated("=").parse(i)?;
-        let (i, parsed_sig_params) =
-            drop_separators('(', ')', many0(drop_separators('"', '"', take_until("\""))))
-                .parse(sig_params)?;
-
-        // [TODO] - continue parsing the signature inputs: keyid, alg, created, expires, nonce, etc.
-        // eof(i)?;
-
-        Ok((i, (sig_name, sig_params, parsed_sig_params)))
+impl HttpSignatureValidationInput {
+    /// Returns the signature's public key parsed from the `Signature-Key` header.
+    fn signature_pub_key(&self) -> &Vec<u8> {
+        &self.signature_key_header.pub_key
     }
 
-    extract(http_sig_input)
-        .map(|(_, e)| e)
-        .map_err(|e| HttpAuthError::MalformedHttpSigInput(e.to_string()))
-}
-
-fn parse_http_sig_key(http_sig_key: &str) -> HttpAuthResult<(&str, &str)> {
-    fn extract(i: &str) -> IResult<&str, (&str, &str)> {
-        let (i, sig_name) = until_terminated("=").parse(i)?;
-        let (i, sig) = drop_separators(':', ':', take_until(":")).parse(i)?;
-
-        eof(i)?;
-
-        Ok((i, (sig_name, sig)))
+    /// Returns the signature's public key parsed from the `Signature-Key` header in DER format.
+    fn signature_pub_key_der(&self) -> HttpAuthResult<Vec<u8>> {
+        self.signature_key_header.signature_pub_key_der()
     }
 
-    extract(http_sig_key)
-        .map(|(_, e)| e)
-        .map_err(|e| HttpAuthError::MalformedHttpSigKey(e.to_string()))
+    /// Returns the delegation chain parsed from the `Signature-Key` header, if it exists.
+    fn delegation_chain(&self) -> &Option<DelegationChain> {
+        &self.signature_key_header.delegation_chain
+    }
 }
 
 fn calculate_http_sig(
@@ -197,4 +181,198 @@ fn calculate_http_sig(
     calculated_http_sig.push_str("\n");
 
     Ok(calculated_http_sig.as_bytes().to_vec())
+}
+
+fn verify_sig(payload: &[u8], sig: &[u8], public_key: &[u8]) -> HttpAuthResult {
+    let sig = Signature::from_slice(&sig).map_err(|_| HttpAuthError::MalformedEcdsaSignature)?;
+
+    let public_key = PublicKey::from_public_key_der(&public_key)
+        .map_err(|_| HttpAuthError::MalformedEcdsaPublicKey)
+        .unwrap();
+    let verifying_key = VerifyingKey::from(public_key);
+
+    verifying_key
+        .verify(&payload, &sig)
+        .map_err(|e| HttpAuthError::JwtSignatureVerificationFailed(e.to_string()))
+}
+
+fn get_http_sig_bytes(req_headers: &HashMap<String, String>) -> HttpAuthResult<Vec<u8>> {
+    let sig_header_str = req_headers
+        .get("signature")
+        .ok_or_else(|| HttpAuthError::MissingSignatureHeader)?;
+
+    let (_, http_sig) = parse_http_sig(sig_header_str)?;
+    let http_sig_bytes = base64_decode(&http_sig)
+        .map_err(|err| HttpAuthError::MalformedHttpSig(format!("{:?}", err)))?;
+
+    Ok(http_sig_bytes)
+}
+
+fn get_http_sig_input_payload(
+    req: &HttpRequest,
+    req_headers: &HashMap<String, String>,
+) -> HttpAuthResult<Vec<u8>> {
+    let sig_input_header = req_headers
+        .get("signature-input")
+        .ok_or_else(|| HttpAuthError::MissingSignatureInputHeader)?;
+
+    let (_, http_sig_input, http_sig_input_elems) = parse_http_sig_input(sig_input_header)?;
+    let payload = calculate_http_sig(req, req_headers, http_sig_input, http_sig_input_elems)?;
+
+    Ok(payload)
+}
+
+#[cfg(feature = "canbench-rs")]
+mod benches {
+    use std::hint::black_box;
+
+    use super::*;
+    use crate::bench::*;
+
+    use canbench_rs::bench;
+    use ic_http_certification::{HttpRequest, Method};
+
+    use golden::{parse_request, user_principal, HTTP_REQUEST_GET, HTTP_REQUEST_POST};
+
+    fn assert_valid_request(request: &HttpRequest, root_key: &[u8], expected_method: Method) {
+        assert_eq!(request.method(), expected_method);
+        let validation_res = validate_http_signature_headers(request, root_key).unwrap();
+        assert_eq!(validation_res.principal, user_principal());
+    }
+
+    #[bench(raw)]
+    fn validate_http_signature_headers_http_get() -> canbench_rs::BenchResult {
+        let request = parse_request(HTTP_REQUEST_GET);
+
+        canister::with_root_key(|root_key| {
+            let bench_result = canbench_rs::bench_fn(|| {
+                black_box(validate_http_signature_headers(
+                    black_box(&request),
+                    black_box(root_key),
+                ))
+                .unwrap();
+            });
+
+            assert_valid_request(&request, root_key, Method::GET);
+
+            bench_result
+        })
+    }
+
+    #[bench(raw)]
+    fn validate_http_signature_headers_http_post() -> canbench_rs::BenchResult {
+        let request = parse_request(HTTP_REQUEST_POST);
+
+        canister::with_root_key(|root_key| {
+            let bench_result = canbench_rs::bench_fn(|| {
+                black_box(validate_http_signature_headers(
+                    black_box(&request),
+                    black_box(root_key),
+                ))
+                .unwrap();
+            });
+
+            assert_valid_request(&request, root_key, Method::POST);
+
+            bench_result
+        })
+    }
+
+    #[bench(raw)]
+    fn verify_sig_http_get() -> canbench_rs::BenchResult {
+        let request = parse_request(HTTP_REQUEST_GET);
+
+        let validation_input = HttpSignatureValidationInput::try_from(&request).unwrap();
+        let signature_pub_key = validation_input.signature_pub_key();
+
+        canbench_rs::bench_fn(|| {
+            black_box(verify_sig(
+                black_box(&validation_input.payload),
+                black_box(&validation_input.signature),
+                black_box(signature_pub_key),
+            ))
+            .unwrap();
+        })
+    }
+
+    #[bench(raw)]
+    fn verify_sig_http_post() -> canbench_rs::BenchResult {
+        let request = parse_request(HTTP_REQUEST_POST);
+
+        let validation_input = HttpSignatureValidationInput::try_from(&request).unwrap();
+        let signature_pub_key = validation_input.signature_pub_key();
+
+        canbench_rs::bench_fn(|| {
+            black_box(verify_sig(
+                black_box(&validation_input.payload),
+                black_box(&validation_input.signature),
+                black_box(signature_pub_key),
+            ))
+            .unwrap();
+        })
+    }
+
+    #[bench(raw)]
+    fn validate_delegation_and_get_principal_http_get() -> canbench_rs::BenchResult {
+        let request = parse_request(HTTP_REQUEST_GET);
+
+        let validation_input = HttpSignatureValidationInput::try_from(&request).unwrap();
+        let delegation_chain = validation_input.delegation_chain().as_ref().unwrap();
+
+        canister::with_root_key(|root_key| {
+            let bench_result = canbench_rs::bench_fn(|| {
+                black_box(validate_delegation_and_get_principal(
+                    black_box(delegation_chain),
+                    black_box("rdmx6-jaaaa-aaaaa-aaadq-cai"),
+                    black_box(root_key),
+                ))
+                .unwrap();
+            });
+
+            assert_valid_request(&request, root_key, Method::GET);
+
+            bench_result
+        })
+    }
+
+    #[bench(raw)]
+    fn validate_delegation_and_get_principal_http_post() -> canbench_rs::BenchResult {
+        let request = parse_request(HTTP_REQUEST_POST);
+
+        let validation_input = HttpSignatureValidationInput::try_from(&request).unwrap();
+        let delegation_chain = validation_input.delegation_chain().as_ref().unwrap();
+
+        canister::with_root_key(|root_key| {
+            let bench_result = canbench_rs::bench_fn(|| {
+                black_box(validate_delegation_and_get_principal(
+                    black_box(delegation_chain),
+                    black_box("rdmx6-jaaaa-aaaaa-aaadq-cai"),
+                    black_box(root_key),
+                ))
+                .unwrap();
+            });
+
+            assert_valid_request(&request, root_key, Method::POST);
+
+            bench_result
+        })
+    }
+
+    #[bench(raw)]
+    fn parse_http_signature_headers_http_get() -> canbench_rs::BenchResult {
+        let request = parse_request(HTTP_REQUEST_GET);
+
+        canbench_rs::bench_fn(|| {
+            black_box(HttpSignatureValidationInput::try_from(black_box(&request))).unwrap();
+        })
+    }
+
+    #[bench(raw)]
+    fn parse_http_signature_headers_http_post() -> canbench_rs::BenchResult {
+        let request = parse_request(HTTP_REQUEST_POST);
+
+        canbench_rs::bench_fn(|| {
+            black_box(HttpSignatureValidationInput::try_from(black_box(&request))).unwrap();
+        })
+    }
 }

@@ -1,7 +1,5 @@
 mod api;
 mod assets;
-#[cfg(feature = "canbench-rs")]
-mod bench;
 mod root_key;
 mod router;
 mod todo;

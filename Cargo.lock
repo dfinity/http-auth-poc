@@ -548,6 +548,7 @@ name = "ic-http-auth"
 version = "0.0.0"
 dependencies = [
  "base64",
+ "canbench-rs",
  "candid",
  "hex",
  "ic-canister-sig-creation",
@@ -1156,7 +1157,6 @@ dependencies = [
 name = "todo_app_backend"
 version = "0.1.0"
 dependencies = [
- "canbench-rs",
  "candid",
  "hex",
  "ic-asset-certification",

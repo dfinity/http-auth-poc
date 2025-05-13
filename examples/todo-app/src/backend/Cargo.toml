@@ -12,7 +12,6 @@ ic-cdk.workspace = true
 ic-http-certification.workspace = true
 ic-asset-certification.workspace = true
 ic-http-auth.workspace = true
-canbench-rs = { version = "0.1.12", optional = true }
 
 include_dir.workspace = true
 hex.workspace = true
