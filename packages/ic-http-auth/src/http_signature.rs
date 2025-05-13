@@ -240,8 +240,32 @@ mod benches {
         assert_eq!(validation_res.principal, user_principal());
     }
 
+    /// Same as [validate_http_signature_headers], but it skips the delegation chain validation.
+    ///
+    /// TODO: remove this once we have a way to create HTTP requests manually for each test.
+    fn validate_http_signature_headers_no_delegation(
+        req: &HttpRequest,
+        _root_key: &[u8],
+    ) -> HttpAuthResult<HttpSignatureValidationData> {
+        let validation_input = HttpSignatureValidationInput::try_from(req)?;
+
+        verify_sig(
+            &validation_input.payload,
+            &validation_input.signature,
+            validation_input.signature_pub_key(),
+        )?;
+
+        // artificially skip the delegation chain validation
+
+        let public_key_der = validation_input.signature_pub_key_der().unwrap();
+
+        Ok(HttpSignatureValidationData {
+            principal: Principal::self_authenticating(public_key_der),
+        })
+    }
+
     #[bench(raw)]
-    fn validate_http_signature_headers_http_get() -> canbench_rs::BenchResult {
+    fn validate_http_signature_headers_http_get_with_delegation() -> canbench_rs::BenchResult {
         let request = parse_request(HTTP_REQUEST_GET);
 
         canister::with_root_key(|root_key| {
@@ -260,12 +284,50 @@ mod benches {
     }
 
     #[bench(raw)]
-    fn validate_http_signature_headers_http_post() -> canbench_rs::BenchResult {
+    fn validate_http_signature_headers_http_post_with_delegation() -> canbench_rs::BenchResult {
         let request = parse_request(HTTP_REQUEST_POST);
 
         canister::with_root_key(|root_key| {
             let bench_result = canbench_rs::bench_fn(|| {
                 black_box(validate_http_signature_headers(
+                    black_box(&request),
+                    black_box(root_key),
+                ))
+                .unwrap();
+            });
+
+            assert_valid_request(&request, root_key, Method::POST);
+
+            bench_result
+        })
+    }
+
+    #[bench(raw)]
+    fn validate_http_signature_headers_http_get_no_delegation() -> canbench_rs::BenchResult {
+        let request = parse_request(HTTP_REQUEST_GET);
+
+        canister::with_root_key(|root_key| {
+            let bench_result = canbench_rs::bench_fn(|| {
+                black_box(validate_http_signature_headers_no_delegation(
+                    black_box(&request),
+                    black_box(root_key),
+                ))
+                .unwrap();
+            });
+
+            assert_valid_request(&request, root_key, Method::GET);
+
+            bench_result
+        })
+    }
+
+    #[bench(raw)]
+    fn validate_http_signature_headers_http_post_no_delegation() -> canbench_rs::BenchResult {
+        let request = parse_request(HTTP_REQUEST_POST);
+
+        canister::with_root_key(|root_key| {
+            let bench_result = canbench_rs::bench_fn(|| {
+                black_box(validate_http_signature_headers_no_delegation(
                     black_box(&request),
                     black_box(root_key),
                 ))
