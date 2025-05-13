@@ -20,7 +20,7 @@ pnpm start
 
 ## Benchmarks
 
-We use [Canbench](https://github.com/dfinity/canbench) to benchmark the performance of the `validate_http_signature_headers` function from the [ic-http-auth](./packages/ic-http-auth/) package.
+We use [Canbench](https://github.com/dfinity/canbench) to benchmark the performance of some functions of the [ic-http-auth](./packages/ic-http-auth/) package.
 
 To run the benchmarks, first install the `canbench` CLI:
 
@@ -31,8 +31,14 @@ cargo install canbench
 Then, run the benchmarks:
 
 ```shell
-cd examples/todo-app/src/backend
+cd packages/ic-http-auth
 canbench
 ```
 
-The latest results can be found in the [canbench_results.yml](./examples/todo-app/src/backend/canbench_results.yml) file.
+The latest results can be found in the [canbench_results.yml](./packages/ic-http-auth/canbench_results.yml) file.
+
+> Note: if you want to update the benchmarks results, you can run the benchmarks with the `--persist` flag:
+>
+> ```shell
+> canbench --persist
+> ```
