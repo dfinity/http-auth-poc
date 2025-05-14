@@ -127,17 +127,17 @@ impl TryFrom<&HttpRequest<'_>> for HttpSignatureValidationInput {
 }
 
 impl HttpSignatureValidationInput {
-    /// Returns the signature's public key parsed from the `Signature-Key` header.
+    /// Returns the signature's public key parsed from the `Signature-Key` header value, as bytes.
     fn signature_pub_key(&self) -> &Vec<u8> {
         &self.signature_key_header.pub_key
     }
 
-    /// Returns the signature's public key parsed from the `Signature-Key` header in DER format.
+    /// Returns the signature's public key parsed from the `Signature-Key` header value, in DER format.
     fn signature_pub_key_der(&self) -> HttpAuthResult<Vec<u8>> {
         self.signature_key_header.signature_pub_key_der()
     }
 
-    /// Returns the delegation chain parsed from the `Signature-Key` header, if it exists.
+    /// Returns the delegation chain parsed from the `Signature-Key` header value, if it exists.
     fn delegation_chain(&self) -> &Option<DelegationChain> {
         &self.signature_key_header.delegation_chain
     }
