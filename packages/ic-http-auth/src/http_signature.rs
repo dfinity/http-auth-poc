@@ -5,14 +5,17 @@ use crate::{
     HttpAuthError, HttpAuthResult,
 };
 use candid::Principal;
-use ic_http_certification::HttpRequest;
+use ic_http_certification::{HeaderField, HttpRequest};
 use p256::{
     ecdsa::{signature::Verifier, Signature, VerifyingKey},
     pkcs8::{DecodePublicKey, EncodePublicKey},
     PublicKey,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+
+const SIGNATURE_HEADER_NAME: &str = "signature";
+const SIGNATURE_KEY_HEADER_NAME: &str = "signature-key";
+const SIGNATURE_INPUT_HEADER_NAME: &str = "signature-input";
 
 pub struct HttpSignatureValidationData {
     pub principal: Principal,
@@ -31,12 +34,11 @@ pub struct SignatureKeyHeader {
     pub delegation_chain: Option<DelegationChain>,
 }
 
-impl TryFrom<&HashMap<String, String>> for SignatureKeyHeader {
+impl TryFrom<&[HeaderField]> for SignatureKeyHeader {
     type Error = HttpAuthError;
 
-    fn try_from(headers: &HashMap<String, String>) -> HttpAuthResult<Self> {
-        let sig_key_header_str = headers
-            .get("signature-key")
+    fn try_from(headers: &[HeaderField]) -> HttpAuthResult<Self> {
+        let sig_key_header_str = find_header(headers, SIGNATURE_KEY_HEADER_NAME)
             .ok_or_else(|| HttpAuthError::MissingSignatureKeyHeader)?;
 
         let (_, http_sig_key) = parse_http_sig_key(sig_key_header_str)?;
@@ -108,15 +110,11 @@ impl TryFrom<&HttpRequest<'_>> for HttpSignatureValidationInput {
     type Error = HttpAuthError;
 
     fn try_from(req: &HttpRequest) -> HttpAuthResult<Self> {
-        let headers = req
-            .headers()
-            .iter()
-            .map(|(k, v)| (k.to_string(), v.to_string()))
-            .collect();
+        let headers = req.headers();
 
-        let signature = get_http_sig_bytes(&headers)?;
-        let signature_key_header = SignatureKeyHeader::try_from(&headers)?;
-        let payload = get_http_sig_input_payload(req, &headers)?;
+        let signature = get_http_sig_bytes(headers)?;
+        let signature_key_header = SignatureKeyHeader::try_from(headers)?;
+        let payload = get_http_sig_input_payload(req, headers)?;
 
         Ok(Self {
             signature_key_header,
@@ -145,7 +143,7 @@ impl HttpSignatureValidationInput {
 
 fn calculate_http_sig(
     req: &HttpRequest,
-    req_headers: &HashMap<String, String>,
+    req_headers: &[HeaderField],
     http_sig_input: &str,
     http_sig_input_elems: Vec<&str>,
 ) -> HttpAuthResult<Vec<u8>> {
@@ -163,10 +161,9 @@ fn calculate_http_sig(
                     q
                 })
                 .unwrap_or_default(),
-            _ => req_headers
-                .get(elem)
-                .cloned()
-                .ok_or_else(|| HttpAuthError::MissingHeaderField(elem.to_string()))?,
+            _ => find_header(req_headers, elem)
+                .ok_or_else(|| HttpAuthError::MissingHeaderField(elem.to_string()))?
+                .to_string(),
         };
 
         calculated_http_sig.push('"');
@@ -196,9 +193,8 @@ fn verify_sig(payload: &[u8], sig: &[u8], public_key: &[u8]) -> HttpAuthResult {
         .map_err(|e| HttpAuthError::JwtSignatureVerificationFailed(e.to_string()))
 }
 
-fn get_http_sig_bytes(req_headers: &HashMap<String, String>) -> HttpAuthResult<Vec<u8>> {
-    let sig_header_str = req_headers
-        .get("signature")
+fn get_http_sig_bytes(req_headers: &[HeaderField]) -> HttpAuthResult<Vec<u8>> {
+    let sig_header_str = find_header(req_headers, SIGNATURE_HEADER_NAME)
         .ok_or_else(|| HttpAuthError::MissingSignatureHeader)?;
 
     let (_, http_sig) = parse_http_sig(sig_header_str)?;
@@ -210,16 +206,22 @@ fn get_http_sig_bytes(req_headers: &HashMap<String, String>) -> HttpAuthResult<V
 
 fn get_http_sig_input_payload(
     req: &HttpRequest,
-    req_headers: &HashMap<String, String>,
+    req_headers: &[HeaderField],
 ) -> HttpAuthResult<Vec<u8>> {
-    let sig_input_header = req_headers
-        .get("signature-input")
+    let sig_input_header = find_header(req_headers, SIGNATURE_INPUT_HEADER_NAME)
         .ok_or_else(|| HttpAuthError::MissingSignatureInputHeader)?;
 
     let (_, http_sig_input, http_sig_input_elems) = parse_http_sig_input(sig_input_header)?;
     let payload = calculate_http_sig(req, req_headers, http_sig_input, http_sig_input_elems)?;
 
     Ok(payload)
+}
+
+fn find_header<'a>(headers: &'a [HeaderField], key: &'_ str) -> Option<&'a str> {
+    headers
+        .iter()
+        .find(|(k, _)| *k == key)
+        .map(|(_, value)| value.as_str())
 }
 
 #[cfg(feature = "canbench-rs")]
