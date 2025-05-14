@@ -18,7 +18,7 @@ pub struct HttpSignatureValidationData {
     pub principal: Principal,
 }
 
-/// The `Signature-Key` header. Use the `from_json` method to parse it from a string.
+/// The `Signature-Key` header value.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SignatureKeyHeader {
     /// The DER-encoded public key.
@@ -227,12 +227,13 @@ mod benches {
     use std::hint::black_box;
 
     use super::*;
-    use crate::bench::*;
+    use crate::bench::{
+        canister,
+        golden::{parse_request, user_principal, HTTP_REQUEST_GET, HTTP_REQUEST_POST},
+    };
 
     use canbench_rs::bench;
     use ic_http_certification::{HttpRequest, Method};
-
-    use golden::{parse_request, user_principal, HTTP_REQUEST_GET, HTTP_REQUEST_POST};
 
     fn assert_valid_request(request: &HttpRequest, root_key: &[u8], expected_method: Method) {
         assert_eq!(request.method(), expected_method);
