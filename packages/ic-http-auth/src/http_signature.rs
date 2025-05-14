@@ -126,8 +126,8 @@ impl TryFrom<&HttpRequest<'_>> for HttpSignatureValidationInput {
 
 impl HttpSignatureValidationInput {
     /// Returns the signature's public key parsed from the `Signature-Key` header value, as bytes.
-    fn signature_pub_key(&self) -> &Vec<u8> {
-        &self.signature_key_header.pub_key
+    fn signature_pub_key(&self) -> &[u8] {
+        self.signature_key_header.pub_key.as_slice()
     }
 
     /// Returns the signature's public key parsed from the `Signature-Key` header value, in DER format.
@@ -136,8 +136,8 @@ impl HttpSignatureValidationInput {
     }
 
     /// Returns the delegation chain parsed from the `Signature-Key` header value, if it exists.
-    fn delegation_chain(&self) -> &Option<DelegationChain> {
-        &self.signature_key_header.delegation_chain
+    fn delegation_chain(&self) -> Option<&DelegationChain> {
+        self.signature_key_header.delegation_chain.as_ref()
     }
 }
 
@@ -382,7 +382,7 @@ mod benches {
         let request = parse_request(HTTP_REQUEST_GET);
 
         let validation_input = HttpSignatureValidationInput::try_from(&request).unwrap();
-        let delegation_chain = validation_input.delegation_chain().as_ref().unwrap();
+        let delegation_chain = validation_input.delegation_chain().unwrap();
 
         canister::with_root_key(|root_key| {
             let bench_result = canbench_rs::bench_fn(|| {
@@ -405,7 +405,7 @@ mod benches {
         let request = parse_request(HTTP_REQUEST_POST);
 
         let validation_input = HttpSignatureValidationInput::try_from(&request).unwrap();
-        let delegation_chain = validation_input.delegation_chain().as_ref().unwrap();
+        let delegation_chain = validation_input.delegation_chain().unwrap();
 
         canister::with_root_key(|root_key| {
             let bench_result = canbench_rs::bench_fn(|| {
