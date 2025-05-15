@@ -28,7 +28,7 @@ panic = "unwind"    # Keep unwinding for better debugging (optional)
 ic-http-auth = { path = "./packages/ic-http-auth", version = "0.0.0" }
 
 candid = "0.10"
-ic-cdk = "0.18"
+ic-cdk = "0.17"
 ic-http-certification = "3"
 ic-asset-certification = "3"
 ic-canister-sig-creation = "1"
