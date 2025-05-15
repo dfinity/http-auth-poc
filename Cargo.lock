@@ -103,21 +103,21 @@ checksum = "d71b6127be86fdcfddb610f7182ac57211d4b18a3e9c82eb2d17662f2227ad6a"
 
 [[package]]
 name = "canbench-rs"
-version = "0.1.12"
+version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7e8af63a2bb70a1906ba8aa6f6990e48f14fdb028500e59062caf127fb200b9"
+checksum = "061c101d2fdea74ae7b92b8593e03fb325d0158ffbac35a856190e08318f5ec1"
 dependencies = [
  "canbench-rs-macros",
  "candid",
- "ic-cdk 0.18.1",
+ "ic-cdk",
  "serde",
 ]
 
 [[package]]
 name = "canbench-rs-macros"
-version = "0.1.12"
+version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd4d630972468fcd844c0ce285d0f385fc925104e0f2cb38c9810c4d49259f9c"
+checksum = "c8726b96a8bf207c605542bc29d597dd4f6676d16eb39da765e1a92ef76fcc7e"
 dependencies = [
  "proc-macro2",
  "quote",
