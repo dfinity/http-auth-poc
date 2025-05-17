@@ -3,3 +3,4 @@ target/
 .dfx/
 dist/
 .env
+.canbench/

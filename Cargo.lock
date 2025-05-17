@@ -102,6 +102,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d71b6127be86fdcfddb610f7182ac57211d4b18a3e9c82eb2d17662f2227ad6a"
 
 [[package]]
+name = "canbench-rs"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "061c101d2fdea74ae7b92b8593e03fb325d0158ffbac35a856190e08318f5ec1"
+dependencies = [
+ "canbench-rs-macros",
+ "candid",
+ "ic-cdk",
+ "serde",
+]
+
+[[package]]
+name = "canbench-rs-macros"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8726b96a8bf207c605542bc29d597dd4f6676d16eb39da765e1a92ef76fcc7e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "candid"
 version = "0.10.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -450,6 +473,7 @@ name = "ic-http-auth"
 version = "0.0.0"
 dependencies = [
  "base64",
+ "canbench-rs",
  "candid",
  "hex",
  "ic-canister-sig-creation",
