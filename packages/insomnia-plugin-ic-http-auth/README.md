@@ -32,7 +32,7 @@ INSOMNIA_PLUGINS_PATH="<path-to-plugin-folder>" pnpm install-plugin
 
 ### Providing Canister ID
 
-The plugin requires a canister ID to sign requests properly. In your Insomnia environment (e.g., Base Environment), create a new environment variable named `canister_id` and set its value to the canister ID you want to use.
+The plugin requires a canister ID to sign requests properly. In your Insomnia environment (e.g., Base Environment), create a new environment variable named `canister_id` and set its value to the canister ID that will receive the requests.
 
 ### Providing Identity
 
