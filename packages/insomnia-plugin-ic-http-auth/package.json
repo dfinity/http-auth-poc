@@ -10,7 +10,7 @@
   "main": "./dist/main.js",
   "scripts": {
     "build": "vite build && tsc -p ./tsconfig.types.json",
-    "publish-plugin": "mkdir -p \"$INSOMNIA_PLUGINS_PATH/insomnia-plugin-ic-http-auth\" && cp ./dist/main.js \"$INSOMNIA_PLUGINS_PATH/insomnia-plugin-ic-http-auth/main.js\" && cp ./package.json \"$INSOMNIA_PLUGINS_PATH/insomnia-plugin-ic-http-auth/package.json\""
+    "install-plugin": "./scripts/local-install.sh"
   },
   "dependencies": {
     "@dfinity/http-auth": "workspace:*"
