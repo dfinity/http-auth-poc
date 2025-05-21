@@ -8,7 +8,8 @@ import {
 } from './crypto';
 
 const KEY_PAIR_STORE_KEY = 'ic-http-auth-key-pair';
-const ENVIRONMENT_VARIABLE_NAME = 'identity';
+const IDENTITY_ENVIRONMENT_VARIABLE_NAME = 'identity';
+const CANISTER_ID_ENVIRONMENT_VARIABLE_NAME = 'canister_id';
 
 const generateKeyPairAndStore = async (
   context: InsomniaContext,
@@ -49,7 +50,7 @@ const loadKeyPair = async (
 ): Promise<CryptoKeyPair> => {
   let keyPair: CryptoKeyPair;
   const envPrivateKeyPem = context.request.getEnvironmentVariable(
-    ENVIRONMENT_VARIABLE_NAME,
+    IDENTITY_ENVIRONMENT_VARIABLE_NAME,
   );
   if (envPrivateKeyPem) {
     keyPair = await importKeyPairFromPem(envPrivateKeyPem);
@@ -62,6 +63,12 @@ const loadKeyPair = async (
 const requestHooks: RequestHook[] = [
   async context => {
     const keyPair = await loadKeyPair(context);
+    const canisterId = context.request.getEnvironmentVariable(
+      CANISTER_ID_ENVIRONMENT_VARIABLE_NAME,
+    );
+    if (!canisterId) {
+      throw new Error('Canister ID is not set');
+    }
     const signatureHeaders = await getHttpMessageSignatureHeaders(
       { keyPair },
       {
@@ -71,7 +78,7 @@ const requestHooks: RequestHook[] = [
           context.request.getHeaders().map(({ name, value }) => [name, value]),
         ),
         body: context.request.getBody().text || '',
-        canisterId: 'bkyz2-fmaaa-aaaaa-qaaaq-cai',
+        canisterId,
       },
     );
     signatureHeaders.forEach(([headerName, headerValue]) => {

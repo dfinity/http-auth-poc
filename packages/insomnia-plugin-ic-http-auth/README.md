@@ -14,6 +14,8 @@ The built plugin JS file will be located at `dist/main.js`.
 
 ## Configuring Insomnia
 
+Make sure you've built the plugin first.
+
 1. Open Insomnia.
 2. Open the "Settings" menu in Insomnia and navigate to the "Plugins" tab.
 3. Click "Reveal Plugins Folder". This will open a new file explorer window.
@@ -21,10 +23,16 @@ The built plugin JS file will be located at `dist/main.js`.
 5. Run the following command in the directory containing the plugin source code:
 
 ```bash
-INSOMNIA_PLUGINS_PATH="<path-to-plugin-folder>" pnpm publish-plugin
+INSOMNIA_PLUGINS_PATH="<path-to-plugin-folder>" pnpm install-plugin
 ```
 
-6. Go back to Insomnia and click on "Reload Plugins".
+6. Go back to Insomnia and click on the "Reload Plugins" button in the "Plugins" tab of the settings menu.
+
+> NOTE: when building the plugin again, re-run the steps 5. and 6. afterwards.
+
+### Providing Canister ID
+
+The plugin requires a canister ID to sign requests properly. In your Insomnia environment (e.g., Base Environment), create a new environment variable named `canister_id` and set its value to the canister ID that will receive the requests.
 
 ### Providing Identity
 
