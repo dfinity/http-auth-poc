@@ -9,7 +9,7 @@
   },
   "main": "./dist/main.js",
   "scripts": {
-    "build": "vite build && tsc -p ./tsconfig.types.json",
+    "build": "vite build && tsc --noEmit",
     "install-plugin": "./scripts/local-install.sh"
   },
   "dependencies": {

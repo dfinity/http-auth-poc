@@ -9,6 +9,6 @@ export default defineConfig({
       fileName: 'main',
       formats: ['cjs'],
     },
-    sourcemap: true,
+    sourcemap: false,
   },
 });
