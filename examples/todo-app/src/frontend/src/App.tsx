@@ -234,7 +234,7 @@ async function loginWithII(
       identityProvider:
         DFX_NETWORK === 'ic'
           ? 'https://identity.internetcomputer.org'
-          : 'http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:8000',
+          : 'http://rdmx6-jaaaa-aaaaa-aaadq-cai.localhost:4943',
       onSuccess: () => {
         resolve(authFromAuthClient(authClient));
       },
@@ -464,10 +464,10 @@ const App: Component = () => {
                       <For each={todos().todos}>
                         {(todo: TodoItem) => (
                           <li
-                            class={`${styles.todoItem} 
-                                    ${todo.completed ? styles.completed : ''} 
-                                    ${todo.isOptimistic ? styles.optimistic : ''} 
-                                    ${todo.isDeleting ? styles.deleting : ''} 
+                            class={`${styles.todoItem}
+                                    ${todo.completed ? styles.completed : ''}
+                                    ${todo.isOptimistic ? styles.optimistic : ''}
+                                    ${todo.isDeleting ? styles.deleting : ''}
                                     ${todo.isUpdating ? styles.updating : ''}`}
                           >
                             <div class={styles.todoContent}>
