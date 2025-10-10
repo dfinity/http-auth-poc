@@ -2,56 +2,56 @@ benches:
   parse_http_signature_headers_http_get:
     total:
       calls: 1
-      instructions: 1544580
+      instructions: 1544039
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   parse_http_signature_headers_http_post:
     total:
       calls: 1
-      instructions: 1543436
+      instructions: 1543278
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   validate_delegation_and_get_principal_http_get:
     total:
       calls: 1
-      instructions: 1564823212
+      instructions: 1564822966
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   validate_delegation_and_get_principal_http_post:
     total:
       calls: 1
-      instructions: 1564822724
+      instructions: 1564822690
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   validate_http_signature_headers_http_get_no_delegation:
     total:
       calls: 1
-      instructions: 128216193
+      instructions: 128215594
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   validate_http_signature_headers_http_get_with_delegation:
     total:
       calls: 1
-      instructions: 1692476820
+      instructions: 1692476033
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   validate_http_signature_headers_http_post_no_delegation:
     total:
       calls: 1
-      instructions: 128133991
+      instructions: 128133781
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
   validate_http_signature_headers_http_post_with_delegation:
     total:
       calls: 1
-      instructions: 1692394136
+      instructions: 1692393944
       heap_increase: 0
       stable_memory_increase: 0
     scopes: {}
