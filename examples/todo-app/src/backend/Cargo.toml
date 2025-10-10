@@ -20,3 +20,6 @@ serde.workspace = true
 serde_json.workspace = true
 once_cell.workspace = true
 matchit.workspace = true
+
+[lints]
+workspace = true

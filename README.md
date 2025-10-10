@@ -56,7 +56,7 @@ Then, deploy the canisters:
 
 ```shell
 dfx deps deploy
-./scripts/local_deploy.sh
+dfx deploy
 ```
 
 In the output, you will see a URL similar to `http://<canister-id>.localhost:4943`. Open this URL in your browser to see the todo app running locally.
