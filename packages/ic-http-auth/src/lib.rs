@@ -3,6 +3,7 @@ mod delegation;
 mod error;
 mod http_signature;
 mod parse_utils;
+mod root_key;
 
 #[cfg(feature = "canbench-rs")]
 pub(crate) mod bench;
