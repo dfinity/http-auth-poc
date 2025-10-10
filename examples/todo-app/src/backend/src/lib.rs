@@ -10,13 +10,11 @@ use ic_cdk::*;
 use ic_http_certification::{HttpRequest, HttpResponse};
 use matchit::Router;
 use once_cell::sync::OnceCell;
-use root_key::set_root_key;
 use router::MethodRouter;
 use todo::*;
 
 #[init]
-fn init(root_key: Option<Vec<u8>>) {
-    set_root_key(root_key);
+fn init() {
     certify_all_assets();
 }
 
