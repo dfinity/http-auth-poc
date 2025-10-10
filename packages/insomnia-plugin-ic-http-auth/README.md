@@ -2,7 +2,7 @@
 
 This plugin automatically adds Internet Computer HTTP Message Signatures to outgoing requests in [Insomnia](https://insomnia.rest/).
 
-It uses the [`@dfinity/http-auth`](../http-auth-js/) library to generate the signatures.
+It uses the [`@icp-sdk/http`](../http-auth-js/) library to generate the signatures.
 
 ## Building the Plugin
 

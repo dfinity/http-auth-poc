@@ -1,4 +1,4 @@
-# http-auth-js
+# @icp-sdk/http
 
 This client side library is
 

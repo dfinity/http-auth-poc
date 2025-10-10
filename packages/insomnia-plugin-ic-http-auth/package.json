@@ -13,6 +13,6 @@
     "install-plugin": "./scripts/local-install.sh"
   },
   "dependencies": {
-    "@dfinity/http-auth": "workspace:*"
+    "@icp-sdk/http": "workspace:*"
   }
 }
