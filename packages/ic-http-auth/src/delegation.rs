@@ -4,7 +4,7 @@ use ic_canister_sig_creation::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::base64::base64_decode;
+use crate::{base64::base64_decode, root_key::extract_raw_root_pk_from_der};
 
 /// Verifies the validity of the given signed delegation chain wrt. the challenge, and the other parameters.
 /// Specifically:
@@ -69,11 +69,12 @@ pub(crate) fn validate_delegation_and_get_principal(
             signed_delegation.delegation.targets.as_ref(),
         ),
     );
+    let ic_root_public_key = extract_raw_root_pk_from_der(ic_root_public_key_raw)?;
     ic_signature_verification::verify_canister_sig(
         message.as_slice(),
         delegation_sig.as_slice(),
         &cs_pk.to_der(),
-        ic_root_public_key_raw,
+        ic_root_public_key,
     )
     .map_err(|e| format!("Invalid canister signature: {}", e))?;
 

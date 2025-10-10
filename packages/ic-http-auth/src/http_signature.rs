@@ -229,9 +229,8 @@ mod benches {
     use std::hint::black_box;
 
     use super::*;
-    use crate::bench::{
-        canister,
-        golden::{HTTP_REQUEST_GET, HTTP_REQUEST_POST, parse_request, user_principal},
+    use crate::bench::golden::{
+        HTTP_REQUEST_GET, HTTP_REQUEST_POST, ROOT_KEY, parse_request, user_principal,
     };
 
     use canbench_rs::bench;
@@ -271,76 +270,68 @@ mod benches {
     fn validate_http_signature_headers_http_get_with_delegation() -> canbench_rs::BenchResult {
         let request = parse_request(HTTP_REQUEST_GET);
 
-        canister::with_root_key(|root_key| {
-            let bench_result = canbench_rs::bench_fn(|| {
-                black_box(validate_http_signature_headers(
-                    black_box(&request),
-                    black_box(root_key),
-                ))
-                .unwrap();
-            });
+        let bench_result = canbench_rs::bench_fn(|| {
+            black_box(validate_http_signature_headers(
+                black_box(&request),
+                black_box(ROOT_KEY),
+            ))
+            .unwrap();
+        });
 
-            assert_valid_request(&request, root_key, Method::GET);
+        assert_valid_request(&request, ROOT_KEY, Method::GET);
 
-            bench_result
-        })
+        bench_result
     }
 
     #[bench(raw)]
     fn validate_http_signature_headers_http_post_with_delegation() -> canbench_rs::BenchResult {
         let request = parse_request(HTTP_REQUEST_POST);
 
-        canister::with_root_key(|root_key| {
-            let bench_result = canbench_rs::bench_fn(|| {
-                black_box(validate_http_signature_headers(
-                    black_box(&request),
-                    black_box(root_key),
-                ))
-                .unwrap();
-            });
+        let bench_result = canbench_rs::bench_fn(|| {
+            black_box(validate_http_signature_headers(
+                black_box(&request),
+                black_box(ROOT_KEY),
+            ))
+            .unwrap();
+        });
 
-            assert_valid_request(&request, root_key, Method::POST);
+        assert_valid_request(&request, ROOT_KEY, Method::POST);
 
-            bench_result
-        })
+        bench_result
     }
 
     #[bench(raw)]
     fn validate_http_signature_headers_http_get_no_delegation() -> canbench_rs::BenchResult {
         let request = parse_request(HTTP_REQUEST_GET);
 
-        canister::with_root_key(|root_key| {
-            let bench_result = canbench_rs::bench_fn(|| {
-                black_box(validate_http_signature_headers_no_delegation(
-                    black_box(&request),
-                    black_box(root_key),
-                ))
-                .unwrap();
-            });
+        let bench_result = canbench_rs::bench_fn(|| {
+            black_box(validate_http_signature_headers_no_delegation(
+                black_box(&request),
+                black_box(ROOT_KEY),
+            ))
+            .unwrap();
+        });
 
-            assert_valid_request(&request, root_key, Method::GET);
+        assert_valid_request(&request, ROOT_KEY, Method::GET);
 
-            bench_result
-        })
+        bench_result
     }
 
     #[bench(raw)]
     fn validate_http_signature_headers_http_post_no_delegation() -> canbench_rs::BenchResult {
         let request = parse_request(HTTP_REQUEST_POST);
 
-        canister::with_root_key(|root_key| {
-            let bench_result = canbench_rs::bench_fn(|| {
-                black_box(validate_http_signature_headers_no_delegation(
-                    black_box(&request),
-                    black_box(root_key),
-                ))
-                .unwrap();
-            });
+        let bench_result = canbench_rs::bench_fn(|| {
+            black_box(validate_http_signature_headers_no_delegation(
+                black_box(&request),
+                black_box(ROOT_KEY),
+            ))
+            .unwrap();
+        });
 
-            assert_valid_request(&request, root_key, Method::POST);
+        assert_valid_request(&request, ROOT_KEY, Method::POST);
 
-            bench_result
-        })
+        bench_result
     }
 
     #[bench(raw)]
@@ -384,20 +375,18 @@ mod benches {
         let validation_input = HttpSignatureValidationInput::try_from(&request).unwrap();
         let delegation_chain = validation_input.delegation_chain().unwrap();
 
-        canister::with_root_key(|root_key| {
-            let bench_result = canbench_rs::bench_fn(|| {
-                black_box(validate_delegation_and_get_principal(
-                    black_box(delegation_chain),
-                    black_box("rdmx6-jaaaa-aaaaa-aaadq-cai"),
-                    black_box(root_key),
-                ))
-                .unwrap();
-            });
+        let bench_result = canbench_rs::bench_fn(|| {
+            black_box(validate_delegation_and_get_principal(
+                black_box(delegation_chain),
+                black_box("rdmx6-jaaaa-aaaaa-aaadq-cai"),
+                black_box(ROOT_KEY),
+            ))
+            .unwrap();
+        });
 
-            assert_valid_request(&request, root_key, Method::GET);
+        assert_valid_request(&request, ROOT_KEY, Method::GET);
 
-            bench_result
-        })
+        bench_result
     }
 
     #[bench(raw)]
@@ -407,20 +396,18 @@ mod benches {
         let validation_input = HttpSignatureValidationInput::try_from(&request).unwrap();
         let delegation_chain = validation_input.delegation_chain().unwrap();
 
-        canister::with_root_key(|root_key| {
-            let bench_result = canbench_rs::bench_fn(|| {
-                black_box(validate_delegation_and_get_principal(
-                    black_box(delegation_chain),
-                    black_box("rdmx6-jaaaa-aaaaa-aaadq-cai"),
-                    black_box(root_key),
-                ))
-                .unwrap();
-            });
+        let bench_result = canbench_rs::bench_fn(|| {
+            black_box(validate_delegation_and_get_principal(
+                black_box(delegation_chain),
+                black_box("rdmx6-jaaaa-aaaaa-aaadq-cai"),
+                black_box(ROOT_KEY),
+            ))
+            .unwrap();
+        });
 
-            assert_valid_request(&request, root_key, Method::POST);
+        assert_valid_request(&request, ROOT_KEY, Method::POST);
 
-            bench_result
-        })
+        bench_result
     }
 
     #[bench(raw)]
