@@ -33,6 +33,3 @@ hex = { workspace = true, optional = true }
 
 [features]
 canbench-rs = ["dep:ic-cdk", "dep:canbench-rs", "dep:hex"]
-
-[lints]
-workspace = true

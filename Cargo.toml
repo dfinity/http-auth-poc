@@ -53,6 +53,3 @@ hex = "0.4"
 version = "0.13"
 default-features = false
 features = ["ecdsa", "jwk", "pkcs8"]
-
-[workspace.lints.rust]
-warnings = "deny"
