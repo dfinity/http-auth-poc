@@ -16,18 +16,14 @@ type JsonableCryptoKeyPair = {
   privateKey: JsonWebKey;
 };
 
-export async function exportKeyPair(
-  keyPair: CryptoKeyPair,
-): Promise<JsonableCryptoKeyPair> {
+export async function exportKeyPair(keyPair: CryptoKeyPair): Promise<JsonableCryptoKeyPair> {
   return {
     publicKey: await crypto.subtle.exportKey(KEY_FORMAT, keyPair.publicKey),
     privateKey: await crypto.subtle.exportKey(KEY_FORMAT, keyPair.privateKey),
   };
 }
 
-export async function importKeyPair(
-  keyPair: JsonableCryptoKeyPair,
-): Promise<CryptoKeyPair> {
+export async function importKeyPair(keyPair: JsonableCryptoKeyPair): Promise<CryptoKeyPair> {
   return {
     publicKey: await crypto.subtle.importKey(
       KEY_FORMAT,
@@ -54,9 +50,7 @@ export async function importKeyPair(
  * openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-256 -out private.pem
  * ```
  */
-export async function importKeyPairFromPem(
-  pem: string,
-): Promise<CryptoKeyPair> {
+export async function importKeyPairFromPem(pem: string): Promise<CryptoKeyPair> {
   const pemContent = pem
     .replace('-----BEGIN PRIVATE KEY-----', '')
     .replace('-----END PRIVATE KEY-----', '')

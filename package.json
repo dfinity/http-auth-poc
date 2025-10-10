@@ -9,9 +9,12 @@
   "packageManager": "pnpm@10.10.0+sha512.d615db246fe70f25dcfea6d8d73dee782ce23e2245e3c4f6f888249fb568149318637dca73c2c5c8ef2a4ca0d5657fb9567188bfab47f566d1ee6ce987815c39",
   "scripts": {
     "start": "pnpm --filter todo-app-frontend start",
-    "build": "pnpm -r build"
+    "build": "pnpm -r build",
+    "codestyle:check": "biome check",
+    "codestyle:fix": "biome check --write"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.2.5",
     "@tanstack/config": "^0.20.3",
     "@types/node": "^24.7.1",
     "typescript": "^5.9.3",

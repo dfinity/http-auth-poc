@@ -6,9 +6,7 @@ export function generateNonce(): string {
   return base64Encode(nonce);
 }
 
-export async function sha256(
-  data: string | BufferSource,
-): Promise<ArrayBuffer> {
+export async function sha256(data: string | BufferSource): Promise<ArrayBuffer> {
   if (typeof data === 'string') {
     data = new TextEncoder().encode(data);
   }

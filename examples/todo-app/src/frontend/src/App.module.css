@@ -1,5 +1,8 @@
+/** biome-ignore-all lint/style/noDescendingSpecificity: No need to fix */
+
 /* ----- Reset & Base ----- */
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -15,7 +18,7 @@ html, body {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: "Courier New", Courier, monospace;
   line-height: 1.5;
   color: #1a1a1a;
 }
@@ -40,7 +43,8 @@ h1 {
 }
 
 /* ----- Todo Section ----- */
-.todoSection, .loginSection {
+.todoSection,
+.loginSection {
   background-color: #f5f5f5;
   border: 2px solid #000;
   padding: 1.5rem;
@@ -148,7 +152,7 @@ button:disabled {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .deleteBtn {
     align-self: flex-end;
     margin-top: 0.5rem;
@@ -260,24 +264,26 @@ footer {
 /* ----- Accessibility Enhancements ----- */
 @media (prefers-reduced-motion: reduce) {
   * {
+    /* biome-ignore lint/complexity/noImportantStyles: Needed here */
     transition: none !important;
   }
 }
 
 /* ----- Responsive Adjustments ----- */
 @media (max-width: 768px) {
-  .todoSection, .loginSection {
+  .todoSection,
+  .loginSection {
     padding: 1rem;
   }
-  
+
   h1 {
     font-size: 1.75rem;
   }
-  
+
   h2 {
     font-size: 1.5rem;
   }
-  
+
   .todoForm {
     padding: 0.75rem;
   }
@@ -288,17 +294,19 @@ footer {
   body {
     background-color: #121212;
   }
-  
+
   .App {
     color: #ffffff;
     background-color: #121212;
   }
 
-  header, footer {
+  header,
+  footer {
     border-color: #999999;
   }
 
-  .todoSection, .loginSection {
+  .todoSection,
+  .loginSection {
     background-color: #1e1e1e;
     border-color: #999999;
   }
@@ -308,7 +316,8 @@ footer {
     color: #ffffff;
   }
 
-  .todoForm, .todoItem {
+  .todoForm,
+  .todoItem {
     background-color: #282828;
     border-color: #999999;
   }
@@ -323,7 +332,8 @@ footer {
     color: #e0e0e0;
   }
 
-  button, input {
+  button,
+  input {
     background-color: #3a3a3a;
     border-color: #999999;
     color: #ffffff;
@@ -351,20 +361,21 @@ footer {
     color: #ffffff;
     border-color: #a06c6e;
   }
-  
+
   /* Focus states with higher contrast */
-  button:focus, 
+  button:focus,
   input:focus,
   .todoContent input[type="checkbox"]:focus {
     outline: 2px solid #ffffff;
     outline-offset: 2px;
   }
-  
+
   /* Add text shadow for headers to increase readability */
-  h1, h2 {
+  h1,
+  h2 {
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.7);
   }
-  
+
   /* Improve button contrast for disabled state */
   button:disabled {
     opacity: 0.7;
@@ -379,7 +390,7 @@ footer {
     background-color: #1a237e;
     border-color: #3949ab;
   }
-  
+
   .devNote p {
     color: #ffffff;
   }
@@ -392,7 +403,7 @@ footer {
 }
 
 .optimistic::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -439,7 +450,7 @@ footer {
     background-color: #1a237e;
     border-color: #3949ab;
   }
-  
+
   .devNote p {
     color: #ffffff;
   }
