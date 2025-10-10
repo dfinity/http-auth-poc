@@ -1,5 +1,5 @@
 {
-  "name": "@dfinity/http-auth",
+  "name": "@icp-sdk/http",
   "version": "0.0.0",
   "description": "Client side support for ICP HTTP authentication",
   "author": "DFINITY Stiftung",
@@ -31,7 +31,17 @@
         "require": "./dist/cjs/index.d.cts"
       },
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.cjs"
+      "require": "./dist/cjs/index.cjs",
+      "default": "./dist/esm/index.js"
+    },
+    "./auth": {
+      "types": {
+        "import": "./dist/esm/auth/index.d.ts",
+        "require": "./dist/cjs/auth/index.d.cts"
+      },
+      "import": "./dist/esm/auth/index.js",
+      "require": "./dist/cjs/auth/index.cjs",
+      "default": "./dist/esm/auth/index.js"
     }
   },
   "scripts": {

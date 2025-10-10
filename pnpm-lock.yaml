@@ -32,12 +32,12 @@ importers:
       '@dfinity/auth-client':
         specifier: ^2.4.1
         version: 2.4.1(@dfinity/agent@2.4.1(@dfinity/candid@2.4.1(@dfinity/principal@2.4.1))(@dfinity/principal@2.4.1))(@dfinity/identity@2.4.1(@dfinity/agent@2.4.1(@dfinity/candid@2.4.1(@dfinity/principal@2.4.1))(@dfinity/principal@2.4.1))(@dfinity/principal@2.4.1))(@dfinity/principal@2.4.1)
-      '@dfinity/http-auth':
-        specifier: workspace:*
-        version: link:../../../../packages/http-auth-js
       '@dfinity/identity':
         specifier: ^2.4.1
         version: 2.4.1(@dfinity/agent@2.4.1(@dfinity/candid@2.4.1(@dfinity/principal@2.4.1))(@dfinity/principal@2.4.1))(@dfinity/principal@2.4.1)
+      '@icp-sdk/http':
+        specifier: workspace:*
+        version: link:../../../../packages/http-auth-js
       solid-js:
         specifier: ^1.9.6
         version: 1.9.6
@@ -63,7 +63,7 @@ importers:
 
   packages/insomnia-plugin-ic-http-auth:
     dependencies:
-      '@dfinity/http-auth':
+      '@icp-sdk/http':
         specifier: workspace:*
         version: link:../http-auth-js
 

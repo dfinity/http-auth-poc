@@ -1,6 +1,6 @@
 import { AuthClient } from '@dfinity/auth-client';
-import { addHttpMessageSignatureToRequest } from '@dfinity/http-auth';
 import type { DelegationChain, DelegationIdentity, ECDSAKeyIdentity } from '@dfinity/identity';
+import { addHttpMessageSignatureToRequest } from '@icp-sdk/http/auth';
 import {
   type Component,
   createEffect,

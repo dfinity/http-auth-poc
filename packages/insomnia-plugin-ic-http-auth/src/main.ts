@@ -1,4 +1,4 @@
-import { getHttpMessageSignatureHeaders } from '@dfinity/http-auth';
+import { getHttpMessageSignatureHeaders } from '@icp-sdk/http/auth';
 import { exportKeyPair, generateKeyPair, importKeyPair, importKeyPairFromPem } from './crypto';
 import type { InsomniaContext, RequestHook } from './insomnia';
 
