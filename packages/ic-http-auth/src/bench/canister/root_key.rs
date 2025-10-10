@@ -4,7 +4,7 @@ const IC_ROOT_PK_DER_PREFIX: &[u8; 37] = b"\x30\x81\x82\x30\x1d\x06\x0d\x2b\x06\
 const IC_ROOT_PK_LENGTH: usize = 96;
 
 thread_local! {
-    static ROOT_KEY: RefCell<Vec<u8>> = RefCell::new(vec![]);
+    static ROOT_KEY: RefCell<Vec<u8>> = const { RefCell::new(vec![]) };
 }
 
 pub fn with_root_key<F, R>(f: F) -> R

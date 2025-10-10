@@ -10,7 +10,7 @@ use ic_cdk::init;
 use root_key::set_root_key;
 
 thread_local! {
-    static ROOT_KEY: RefCell<Vec<u8>> = RefCell::new(vec![]);
+    static ROOT_KEY: RefCell<Vec<u8>> = const { RefCell::new(vec![]) };
 }
 
 #[init]

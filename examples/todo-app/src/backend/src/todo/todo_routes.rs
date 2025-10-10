@@ -13,7 +13,7 @@ use once_cell::sync::OnceCell;
 use std::{cell::RefCell, collections::HashMap, sync::Mutex};
 
 thread_local! {
-    static NEXT_TODO_ID: RefCell<u32> = RefCell::new(0);
+    static NEXT_TODO_ID: RefCell<u32> = const { RefCell::new(0) };
     static TODO_ITEMS: RefCell<UserTodoMap> = RefCell::<UserTodoMap>::new(UserTodoMap::new());
 }
 
@@ -71,9 +71,9 @@ pub fn list_todo_items_handler(req: &HttpRequest, _params: &Params) -> HttpRespo
 
         let user_todos = all_todos
             .entry(jwt.principal.to_text())
-            .or_insert_with(HashMap::new)
-            .iter()
-            .map(|(_, todo)| todo.clone())
+            .or_default()
+            .values()
+            .cloned()
             .collect::<Vec<_>>();
 
         let data = ListTodosResponseBody {
@@ -110,7 +110,7 @@ pub fn create_todo_item_handler(req: &HttpRequest, _params: &Params) -> HttpResp
         let mut all_todos = todos().lock().unwrap();
         all_todos
             .entry(jwt.principal.to_text())
-            .or_insert_with(HashMap::new)
+            .or_default()
             .insert(id, todo_item.clone());
 
         CreateTodoItemResponse::created(todo_item)
