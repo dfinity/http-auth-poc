@@ -1,12 +1,18 @@
 import { defineConfig } from 'vite';
 import solidPlugin from 'vite-plugin-solid';
 import { compression } from 'vite-plugin-compression2';
+import checker from 'vite-plugin-checker';
 
 export default defineConfig({
   plugins: [
     solidPlugin(),
     compression({ algorithm: 'gzip' }),
     compression({ algorithm: 'brotliCompress' }),
+    checker({
+      typescript: {
+        tsconfigPath: './tsconfig.app.json',
+      },
+    }),
   ],
   build: {
     target: 'esnext',
@@ -17,11 +23,8 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:4943',
         changeOrigin: true,
-        headers: {
-          referer: 'http://bkyz2-fmaaa-aaaaa-qaaaq-cai.localhost:8000',
-        },
       },
     },
   },

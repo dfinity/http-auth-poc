@@ -69,7 +69,7 @@ export async function addHttpMessageSignatureToRequest(
 }
 
 async function contentDigestHeader(
-  body: ArrayBuffer | ArrayBufferView | string,
+  body: BufferSource | string,
 ): Promise<[string, string]> {
   const hash = await sha256(body);
   const hashBase64 = base64Encode(new Uint8Array(hash));
@@ -79,7 +79,7 @@ async function contentDigestHeader(
 
 async function addContentDigestHeader(
   headers: Headers,
-  body: ArrayBuffer | ArrayBufferView | string,
+  body: BufferSource | string,
 ): Promise<string> {
   const existingHeaderValue = headers.get(CONTENT_DIGEST_HEADER_NAME);
   // no need to add the content-digest header if it's already present
@@ -134,7 +134,7 @@ export type HttpMessageSignatureParams = {
   url: string | URL;
   method: string;
   headers: Headers;
-  body: ArrayBuffer | ArrayBufferView | string;
+  body: BufferSource | string;
   canisterId: string;
   expirationTimeMs?: number;
   tag?: string | null;
