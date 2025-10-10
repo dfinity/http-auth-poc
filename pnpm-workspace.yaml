@@ -1,4 +1,7 @@
 packages:
-  - 'examples/todo-app/src/frontend'
-  - 'packages/http-auth-js'
-  - 'packages/insomnia-plugin-ic-http-auth'
+  - examples/todo-app/src/frontend
+  - packages/http-auth-js
+  - packages/insomnia-plugin-ic-http-auth
+onlyBuiltDependencies:
+  - esbuild
+  - unrs-resolver
