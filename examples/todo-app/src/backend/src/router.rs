@@ -41,7 +41,7 @@ impl MethodRouter {
         self
     }
 
-    pub fn route(&self, req: &HttpRequest, params: &Params) -> HttpResponse {
+    pub fn route(&self, req: &HttpRequest, params: &Params) -> HttpResponse<'_> {
         let handler = self.routes.get(&req.method()).unwrap();
 
         handler(req, params)

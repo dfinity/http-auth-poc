@@ -27,7 +27,7 @@ nom.workspace = true
 sha2.workspace = true
 p256.workspace = true
 
-canbench-rs = { version = "0.1.12", optional = true }
+canbench-rs = { version = "0.2.1", optional = true }
 ic-cdk = { workspace = true, optional = true }
 hex = { workspace = true, optional = true }
 
