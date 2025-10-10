@@ -1,4 +1,4 @@
-use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use serde::{Deserialize, Deserializer};
 
 pub(crate) fn base64_decode(input: &str) -> Result<Vec<u8>, String> {

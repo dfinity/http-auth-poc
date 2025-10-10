@@ -21,6 +21,7 @@ impl<'a, T: Serialize> ApiResponse<T> {
         Self::success(StatusCode::OK, data).build()
     }
 
+    #[allow(dead_code)]
     pub fn no_content(data: T) -> HttpResponse<'a> {
         Self::success(StatusCode::NO_CONTENT, data).build()
     }
@@ -33,15 +34,18 @@ impl<'a, T: Serialize> ApiResponse<T> {
         Self::failure(StatusCode::BAD_REQUEST, message).build()
     }
 
+    #[allow(dead_code)]
     pub fn not_found() -> HttpResponse<'a> {
         Self::failure(StatusCode::NOT_FOUND, "Not found".to_string()).build()
     }
 
+    #[allow(dead_code)]
     pub fn not_allowed() -> HttpResponse<'a> {
         Self::failure(
             StatusCode::METHOD_NOT_ALLOWED,
             "Method not allowed".to_string(),
-        ).build()
+        )
+        .build()
     }
 
     fn success(status_code: StatusCode, data: T) -> Self {

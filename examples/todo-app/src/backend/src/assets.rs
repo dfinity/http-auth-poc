@@ -2,7 +2,7 @@ use ic_asset_certification::{
     Asset, AssetConfig, AssetEncoding, AssetFallbackConfig, AssetMap, AssetRedirectKind,
     AssetRouter,
 };
-use ic_cdk::api::{canister_balance, data_certificate, set_certified_data};
+use ic_cdk::api::{canister_cycle_balance, certified_data_set, data_certificate};
 use ic_http_certification::{
     utils::add_v2_certificate_header, DefaultCelBuilder, HeaderField, HttpCertification,
     HttpCertificationPath, HttpCertificationTree, HttpCertificationTreeEntry, HttpRequest,
@@ -26,7 +26,7 @@ const NO_CACHE_ASSET_CACHE_CONTROL: &str = "public, no-cache, no-store";
 pub struct Metrics {
     pub num_assets: usize,
     pub num_fallback_assets: usize,
-    pub cycle_balance: u64,
+    pub cycle_balance: u128,
 }
 
 pub fn certify_all_assets() {
@@ -107,10 +107,10 @@ pub fn certify_all_assets() {
 
     ASSET_ROUTER.with_borrow_mut(|asset_router| {
         if let Err(err) = asset_router.certify_assets(assets, asset_configs) {
-            ic_cdk::trap(&format!("Failed to certify assets: {}", err));
+            ic_cdk::trap(format!("Failed to certify assets: {}", err));
         }
 
-        set_certified_data(&asset_router.root_hash());
+        certified_data_set(asset_router.root_hash());
     });
 }
 
@@ -132,7 +132,7 @@ pub fn serve_metrics(_req: &HttpRequest, _params: &Params) -> HttpResponse<'stat
         let metrics = Metrics {
             num_assets: asset_router.get_assets().len(),
             num_fallback_assets: asset_router.get_fallback_assets().len(),
-            cycle_balance: canister_balance(),
+            cycle_balance: canister_cycle_balance(),
         };
         let body = serde_json::to_vec(&metrics).expect("Failed to serialize metrics");
         let headers = get_asset_headers(vec![

@@ -1,15 +1,15 @@
 use crate::{
-    base64::{base64_decode, deserialize_base64_string_to_bytes},
-    delegation::{validate_delegation_and_get_principal, DelegationChain},
-    parse_utils::{parse_http_sig, parse_http_sig_input, parse_http_sig_key},
     HttpAuthError, HttpAuthResult,
+    base64::{base64_decode, deserialize_base64_string_to_bytes},
+    delegation::{DelegationChain, validate_delegation_and_get_principal},
+    parse_utils::{parse_http_sig, parse_http_sig_input, parse_http_sig_key},
 };
 use candid::Principal;
 use ic_http_certification::{HeaderField, HttpRequest};
 use p256::{
-    ecdsa::{signature::Verifier, Signature, VerifyingKey},
-    pkcs8::{DecodePublicKey, EncodePublicKey},
     PublicKey,
+    ecdsa::{Signature, VerifyingKey, signature::Verifier},
+    pkcs8::{DecodePublicKey, EncodePublicKey},
 };
 use serde::{Deserialize, Serialize};
 
@@ -39,11 +39,11 @@ impl TryFrom<&[HeaderField]> for SignatureKeyHeader {
 
     fn try_from(headers: &[HeaderField]) -> HttpAuthResult<Self> {
         let sig_key_header_str = find_header(headers, SIGNATURE_KEY_HEADER_NAME)
-            .ok_or_else(|| HttpAuthError::MissingSignatureKeyHeader)?;
+            .ok_or(HttpAuthError::MissingSignatureKeyHeader)?;
 
         let (_, http_sig_key) = parse_http_sig_key(sig_key_header_str)?;
 
-        let sig_key_bytes = base64_decode(&http_sig_key)
+        let sig_key_bytes = base64_decode(http_sig_key)
             .map_err(|err| HttpAuthError::MalformedHttpSigKey(format!("{:?}", err)))?;
         let sig_key_header = serde_json::from_slice::<SignatureKeyHeader>(&sig_key_bytes)
             .map_err(|err| HttpAuthError::MalformedHttpSigKey(format!("{:?}", err)))?;
@@ -170,35 +170,35 @@ fn calculate_http_sig(
         calculated_http_sig.push_str(elem);
         calculated_http_sig.push_str("\": ");
         calculated_http_sig.push_str(&value);
-        calculated_http_sig.push_str("\n");
+        calculated_http_sig.push('\n');
     }
 
     calculated_http_sig.push_str("\"@signature-params\": ");
-    calculated_http_sig.push_str(&http_sig_input);
-    calculated_http_sig.push_str("\n");
+    calculated_http_sig.push_str(http_sig_input);
+    calculated_http_sig.push('\n');
 
     Ok(calculated_http_sig.as_bytes().to_vec())
 }
 
 fn verify_sig(payload: &[u8], sig: &[u8], public_key: &[u8]) -> HttpAuthResult {
-    let sig = Signature::from_slice(&sig).map_err(|_| HttpAuthError::MalformedEcdsaSignature)?;
+    let sig = Signature::from_slice(sig).map_err(|_| HttpAuthError::MalformedEcdsaSignature)?;
 
-    let public_key = PublicKey::from_public_key_der(&public_key)
+    let public_key = PublicKey::from_public_key_der(public_key)
         .map_err(|_| HttpAuthError::MalformedEcdsaPublicKey)
         .unwrap();
     let verifying_key = VerifyingKey::from(public_key);
 
     verifying_key
-        .verify(&payload, &sig)
+        .verify(payload, &sig)
         .map_err(|e| HttpAuthError::JwtSignatureVerificationFailed(e.to_string()))
 }
 
 fn get_http_sig_bytes(req_headers: &[HeaderField]) -> HttpAuthResult<Vec<u8>> {
     let sig_header_str = find_header(req_headers, SIGNATURE_HEADER_NAME)
-        .ok_or_else(|| HttpAuthError::MissingSignatureHeader)?;
+        .ok_or(HttpAuthError::MissingSignatureHeader)?;
 
     let (_, http_sig) = parse_http_sig(sig_header_str)?;
-    let http_sig_bytes = base64_decode(&http_sig)
+    let http_sig_bytes = base64_decode(http_sig)
         .map_err(|err| HttpAuthError::MalformedHttpSig(format!("{:?}", err)))?;
 
     Ok(http_sig_bytes)
@@ -209,7 +209,7 @@ fn get_http_sig_input_payload(
     req_headers: &[HeaderField],
 ) -> HttpAuthResult<Vec<u8>> {
     let sig_input_header = find_header(req_headers, SIGNATURE_INPUT_HEADER_NAME)
-        .ok_or_else(|| HttpAuthError::MissingSignatureInputHeader)?;
+        .ok_or(HttpAuthError::MissingSignatureInputHeader)?;
 
     let (_, http_sig_input, http_sig_input_elems) = parse_http_sig_input(sig_input_header)?;
     let payload = calculate_http_sig(req, req_headers, http_sig_input, http_sig_input_elems)?;
@@ -231,7 +231,7 @@ mod benches {
     use super::*;
     use crate::bench::{
         canister,
-        golden::{parse_request, user_principal, HTTP_REQUEST_GET, HTTP_REQUEST_POST},
+        golden::{HTTP_REQUEST_GET, HTTP_REQUEST_POST, parse_request, user_principal},
     };
 
     use canbench_rs::bench;

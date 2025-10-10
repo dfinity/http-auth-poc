@@ -1,11 +1,11 @@
 use nom::{
+    IResult, Parser,
     bytes::complete::{tag, take_until, take_while},
     character::complete::char,
     combinator::{cut, eof},
-    error::{context, ContextError, ParseError},
+    error::{ContextError, ParseError, context},
     multi::many0,
     sequence::{preceded, terminated},
-    IResult, Parser,
 };
 
 use crate::{HttpAuthError, HttpAuthResult};

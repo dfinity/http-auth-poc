@@ -26,7 +26,6 @@ pub enum HttpAuthError {
     #[error(r#"Failed to parse the "http_sig" claim of the provided JWT: {0}."#)]
     MalformedHttpSig(String),
 
-
     #[error(r#"Failed to parse "http_sig_input" claim of the provided JWT: {0}."#)]
     MalformedHttpSigInput(String),
 

@@ -1,6 +1,6 @@
 use candid::Principal;
 use ic_canister_sig_creation::{
-    delegation_signature_msg, CanisterSigPublicKey, DELEGATION_SIG_DOMAIN,
+    CanisterSigPublicKey, DELEGATION_SIG_DOMAIN, delegation_signature_msg,
 };
 use serde::{Deserialize, Serialize};
 
