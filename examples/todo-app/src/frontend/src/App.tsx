@@ -1,26 +1,21 @@
+import { AuthClient } from '@dfinity/auth-client';
+import type { DelegationChain, DelegationIdentity, ECDSAKeyIdentity } from '@dfinity/identity';
+import { addHttpMessageSignatureToRequest } from '@icp-sdk/http/auth';
 import {
+  type Component,
   createEffect,
   createResource,
   createSignal,
+  For,
   Match,
   Suspense,
   Switch,
-  type Component,
-  For,
 } from 'solid-js';
-import { addHttpMessageSignatureToRequest } from '@dfinity/http-auth';
-import { AuthClient } from '@dfinity/auth-client';
-import {
-  DelegationChain,
-  DelegationIdentity,
-  ECDSAKeyIdentity,
-} from '@dfinity/identity';
 
 import styles from './App.module.css';
 
 const DFX_NETWORK = import.meta.env.DFX_NETWORK;
-const CANISTER_ID_TODO_APP_BACKEND = import.meta.env
-  .CANISTER_ID_TODO_APP_BACKEND;
+const CANISTER_ID_TODO_APP_BACKEND = import.meta.env.CANISTER_ID_TODO_APP_BACKEND;
 
 type LoginResponse = {
   keyPair: CryptoKeyPair;
@@ -45,12 +40,11 @@ function getIdentity(authClient: AuthClient): DelegationIdentity {
 }
 
 function keyPairFromIdentity(identity: DelegationIdentity): CryptoKeyPair {
+  // biome-ignore lint/complexity/useLiteralKeys: Field is private
   return (identity['_inner'] as ECDSAKeyIdentity).getKeyPair();
 }
 
-function authFromAuthClient(
-  authClient: AuthClient | undefined,
-): LoginResponse | undefined {
+function authFromAuthClient(authClient: AuthClient | undefined): LoginResponse | undefined {
   if (!authClient || !authClient.isAuthenticated()) {
     return undefined;
   }
@@ -65,7 +59,7 @@ function authFromAuthClient(
   };
 }
 
-async function fetchTodos(auth: LoginResponse | undefined): Promise<any> {
+async function fetchTodos(auth: LoginResponse | undefined): Promise<{ todos: TodoItem[] } | null> {
   if (!auth) {
     return null;
   }
@@ -160,9 +154,7 @@ async function toggleTodoCompleted(
     return false;
   }
 
-  console.log(
-    `Toggling todo #${id} completed status from ${completed} to ${!completed}`,
-  );
+  console.log(`Toggling todo #${id} completed status from ${completed} to ${!completed}`);
   try {
     const req = new Request(`/api/todos/${id}`, {
       method: 'PUT',
@@ -193,10 +185,7 @@ async function toggleTodoCompleted(
   }
 }
 
-async function deleteTodo(
-  auth: LoginResponse | undefined,
-  id: number,
-): Promise<boolean> {
+async function deleteTodo(auth: LoginResponse | undefined, id: number): Promise<boolean> {
   if (!auth) {
     return false;
   }
@@ -226,9 +215,7 @@ async function deleteTodo(
   }
 }
 
-async function loginWithII(
-  authClient: AuthClient,
-): Promise<LoginResponse | undefined> {
+async function loginWithII(authClient: AuthClient): Promise<LoginResponse | undefined> {
   return await new Promise((resolve, reject) => {
     authClient.login({
       identityProvider:
@@ -238,7 +225,7 @@ async function loginWithII(
       onSuccess: () => {
         resolve(authFromAuthClient(authClient));
       },
-      onError: error => {
+      onError: (error) => {
         reject(error);
       },
     });
@@ -248,8 +235,7 @@ async function loginWithII(
 const App: Component = () => {
   const [getAuthClient] = createResource<AuthClient>(createAuthClient);
   const [auth, setAuth] = createSignal<LoginResponse>();
-  const [todos, { refetch: refetchTodos, mutate: mutateTodos }] =
-    createResource(auth, fetchTodos);
+  const [todos, { refetch: refetchTodos, mutate: mutateTodos }] = createResource(auth, fetchTodos);
   const [isCreateLoading, setIsCreateLoading] = createSignal(false);
   const [newTodoTitle, setNewTodoTitle] = createSignal('');
   const [errorMessage, setErrorMessage] = createSignal<string | null>(null);
@@ -272,15 +258,13 @@ const App: Component = () => {
         console.log(`Successfully refreshed todo #${id}:`, todoData);
 
         // Update just this todo in the todos list
-        mutateTodos(currentTodos => {
+        mutateTodos((currentTodos) => {
           if (!currentTodos) return currentTodos;
 
           return {
             ...currentTodos,
             todos: currentTodos.todos.map((todo: TodoItem) =>
-              todo.id === id
-                ? { ...todoData, isUpdating: false, isDeleting: false }
-                : todo,
+              todo.id === id ? { ...todoData, isUpdating: false, isDeleting: false } : todo,
             ),
           };
         });
@@ -316,8 +300,8 @@ const App: Component = () => {
       <main>
         <div class={styles.devNote}>
           <p>
-            💡 Developer Tip: Open your browser's dev tools to inspect the JSON
-            payloads and HTTP message signatures!
+            💡 Developer Tip: Open your browser's dev tools to inspect the JSON payloads and HTTP
+            message signatures!
           </p>
         </div>
         <Switch>
@@ -333,7 +317,7 @@ const App: Component = () => {
 
               <form
                 class={styles.todoForm}
-                onSubmit={e => {
+                onSubmit={(e) => {
                   e.preventDefault();
                   const title = newTodoTitle().trim();
                   if (!title) return;
@@ -344,7 +328,7 @@ const App: Component = () => {
                   const tempId = getNextTempId();
 
                   // Optimistically add the new todo
-                  mutateTodos(prev => {
+                  mutateTodos((prev) => {
                     if (!prev) return prev;
                     return {
                       ...prev,
@@ -363,13 +347,11 @@ const App: Component = () => {
                   setNewTodoTitle('');
 
                   // Actually create the todo on the server
-                  createTodo(auth(), title).then(async result => {
+                  createTodo(auth(), title).then(async (result) => {
                     setIsCreateLoading(false);
 
                     if (result.success && result.id !== undefined) {
-                      console.log(
-                        `Fetching newly created todo with ID: ${result.id}`,
-                      );
+                      console.log(`Fetching newly created todo with ID: ${result.id}`);
 
                       // Get the real todo data with the correct ID
                       const newTodo = await fetchTodoById(auth(), result.id);
@@ -378,14 +360,12 @@ const App: Component = () => {
                         console.log('Successfully fetched new todo:', newTodo);
 
                         // Replace the optimistic todo with the real one
-                        mutateTodos(prev => {
+                        mutateTodos((prev) => {
                           if (!prev) return prev;
                           return {
                             ...prev,
                             todos: prev.todos.map((todo: TodoItem) =>
-                              todo.id === tempId
-                                ? { ...newTodo, isOptimistic: false }
-                                : todo,
+                              todo.id === tempId ? { ...newTodo, isOptimistic: false } : todo,
                             ),
                           };
                         });
@@ -395,7 +375,7 @@ const App: Component = () => {
                         );
 
                         // If we couldn't fetch the new todo, just update the ID
-                        mutateTodos(prev => {
+                        mutateTodos((prev) => {
                           if (!prev) return prev;
                           return {
                             ...prev,
@@ -403,7 +383,7 @@ const App: Component = () => {
                               todo.id === tempId
                                 ? {
                                     ...todo,
-                                    id: result.id!,
+                                    id: result.id as number,
                                     isOptimistic: false,
                                   }
                                 : todo,
@@ -413,18 +393,14 @@ const App: Component = () => {
                       }
                     } else {
                       // Remove the optimistic todo if creation failed
-                      mutateTodos(prev => {
+                      mutateTodos((prev) => {
                         if (!prev) return prev;
                         return {
                           ...prev,
-                          todos: prev.todos.filter(
-                            (todo: TodoItem) => todo.id !== tempId,
-                          ),
+                          todos: prev.todos.filter((todo: TodoItem) => todo.id !== tempId),
                         };
                       });
-                      setErrorMessage(
-                        'Failed to create todo. Please try again.',
-                      );
+                      setErrorMessage('Failed to create todo. Please try again.');
                     }
                   });
                 }}
@@ -435,7 +411,7 @@ const App: Component = () => {
                     id="new-todo"
                     type="text"
                     value={newTodoTitle()}
-                    onInput={e => setNewTodoTitle(e.target.value)}
+                    onInput={(e) => setNewTodoTitle(e.target.value)}
                     placeholder="What needs to be done?"
                     disabled={isCreateLoading()}
                     aria-disabled={isCreateLoading()}
@@ -450,9 +426,7 @@ const App: Component = () => {
                 </div>
               </form>
 
-              <Suspense
-                fallback={<p aria-live="polite">Loading your todos...</p>}
-              >
+              <Suspense fallback={<p aria-live="polite">Loading your todos...</p>}>
                 <Switch>
                   <Match when={todos.error}>
                     <p role="alert" class={styles.error}>
@@ -461,7 +435,7 @@ const App: Component = () => {
                   </Match>
                   <Match when={todos()}>
                     <ul class={styles.todoList} aria-label="Todo list">
-                      <For each={todos().todos}>
+                      <For each={todos()?.todos}>
                         {(todo: TodoItem) => (
                           <li
                             class={`${styles.todoItem}
@@ -480,7 +454,7 @@ const App: Component = () => {
                                   if (todo.isOptimistic) return;
 
                                   // Optimistically update the completed status
-                                  mutateTodos(prev => {
+                                  mutateTodos((prev) => {
                                     if (!prev) return prev;
                                     return {
                                       ...prev,
@@ -497,19 +471,15 @@ const App: Component = () => {
                                   });
 
                                   // Actually update on the server
-                                  toggleTodoCompleted(
-                                    auth(),
-                                    todo.id,
-                                    todo.completed,
-                                  ).then(async success => {
-                                    if (!success) {
-                                      // Revert to the original state if the update failed
-                                      mutateTodos(prev => {
-                                        if (!prev) return prev;
-                                        return {
-                                          ...prev,
-                                          todos: prev.todos.map(
-                                            (t: TodoItem) =>
+                                  toggleTodoCompleted(auth(), todo.id, todo.completed).then(
+                                    async (success) => {
+                                      if (!success) {
+                                        // Revert to the original state if the update failed
+                                        mutateTodos((prev) => {
+                                          if (!prev) return prev;
+                                          return {
+                                            ...prev,
+                                            todos: prev.todos.map((t: TodoItem) =>
                                               t.id === todo.id
                                                 ? {
                                                     ...t,
@@ -517,88 +487,71 @@ const App: Component = () => {
                                                     isUpdating: false,
                                                   }
                                                 : t,
-                                          ),
-                                        };
-                                      });
-                                      setErrorMessage(
-                                        'Failed to update todo. Please try again.',
-                                      );
-                                    } else {
-                                      // Success - refresh just this todo
-                                      await refreshSingleTodo(todo.id);
-                                    }
-                                  });
+                                            ),
+                                          };
+                                        });
+                                        setErrorMessage('Failed to update todo. Please try again.');
+                                      } else {
+                                        // Success - refresh just this todo
+                                        await refreshSingleTodo(todo.id);
+                                      }
+                                    },
+                                  );
                                 }}
                                 aria-label={`Mark "${todo.title}" as ${todo.completed ? 'incomplete' : 'complete'}`}
-                                disabled={
-                                  todo.isOptimistic ||
-                                  todo.isUpdating ||
-                                  todo.isDeleting
-                                }
+                                disabled={todo.isOptimistic || todo.isUpdating || todo.isDeleting}
                               />
                               <label
                                 for={`todo-${todo.id}`}
-                                class={
-                                  todo.completed ? styles.completedText : ''
-                                }
+                                class={todo.completed ? styles.completedText : ''}
                               >
                                 {todo.title}
                                 {todo.isOptimistic && ' (saving...)'}
                               </label>
                             </div>
                             <button
+                              type="button"
                               class={styles.deleteBtn}
                               onClick={() => {
                                 // Only allow delete if not optimistic
                                 if (todo.isOptimistic) return;
 
                                 // Optimistically mark as deleting
-                                mutateTodos(prev => {
+                                mutateTodos((prev) => {
                                   if (!prev) return prev;
                                   return {
                                     ...prev,
                                     todos: prev.todos.map((t: TodoItem) =>
-                                      t.id === todo.id
-                                        ? { ...t, isDeleting: true }
-                                        : t,
+                                      t.id === todo.id ? { ...t, isDeleting: true } : t,
                                     ),
                                   };
                                 });
 
                                 // Actually delete on the server
-                                deleteTodo(auth(), todo.id).then(
-                                  async success => {
-                                    if (success) {
-                                      // Remove the deleted todo from the list
-                                      mutateTodos(prev => {
-                                        if (!prev) return prev;
-                                        return {
-                                          ...prev,
-                                          todos: prev.todos.filter(
-                                            (t: TodoItem) => t.id !== todo.id,
-                                          ),
-                                        };
-                                      });
-                                    } else {
-                                      // Remove the isDeleting flag if deletion failed
-                                      mutateTodos(prev => {
-                                        if (!prev) return prev;
-                                        return {
-                                          ...prev,
-                                          todos: prev.todos.map(
-                                            (t: TodoItem) =>
-                                              t.id === todo.id
-                                                ? { ...t, isDeleting: false }
-                                                : t,
-                                          ),
-                                        };
-                                      });
-                                      setErrorMessage(
-                                        'Failed to delete todo. Please try again.',
-                                      );
-                                    }
-                                  },
-                                );
+                                deleteTodo(auth(), todo.id).then(async (success) => {
+                                  if (success) {
+                                    // Remove the deleted todo from the list
+                                    mutateTodos((prev) => {
+                                      if (!prev) return prev;
+                                      return {
+                                        ...prev,
+                                        todos: prev.todos.filter((t: TodoItem) => t.id !== todo.id),
+                                      };
+                                    });
+                                  } else {
+                                    // Remove the isDeleting flag if deletion failed
+                                    mutateTodos((prev) => {
+                                      if (!prev) return prev;
+                                      return {
+                                        ...prev,
+                                        todos: prev.todos.map((t: TodoItem) =>
+                                          t.id === todo.id ? { ...t, isDeleting: false } : t,
+                                        ),
+                                      };
+                                    });
+                                    setErrorMessage('Failed to delete todo. Please try again.');
+                                  }
+                                });
                               }}
                               aria-label={`Delete todo: ${todo.title}`}
                               disabled={todo.isOptimistic || todo.isDeleting}
@@ -608,11 +561,12 @@ const App: Component = () => {
                           </li>
                         )}
                       </For>
-                      {todos().todos.length === 0 && (
-                        <li class={styles.emptyState}>
-                          <p>No todos yet. Add one above!</p>
-                        </li>
-                      )}
+                      {!todos() ||
+                        (todos()?.todos.length === 0 && (
+                          <li class={styles.emptyState}>
+                            <p>No todos yet. Add one above!</p>
+                          </li>
+                        ))}
                     </ul>
                   </Match>
                 </Switch>
@@ -620,6 +574,7 @@ const App: Component = () => {
 
               <div class={styles.logoutContainer}>
                 <button
+                  type="button"
                   class={styles.logoutBtn}
                   onClick={async () => {
                     const authClient = getAuthClient();
@@ -638,6 +593,7 @@ const App: Component = () => {
             <section class={styles.loginSection}>
               <p>Please login to manage your todos.</p>
               <button
+                type="button"
                 class={styles.loginBtn}
                 onClick={async () => {
                   const authClient = getAuthClient();
@@ -657,10 +613,7 @@ const App: Component = () => {
       </main>
 
       <footer>
-        <p>
-          Todo App · <span aria-label="Copyright">©</span>{' '}
-          {new Date().getFullYear()}
-        </p>
+        <p>Todo App · © {new Date().getFullYear()}</p>
       </footer>
     </div>
   );

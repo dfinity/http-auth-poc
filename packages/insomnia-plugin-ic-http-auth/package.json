@@ -9,10 +9,10 @@
   },
   "main": "./dist/main.js",
   "scripts": {
-    "build": "vite build && tsc --noEmit",
+    "build": "vite build",
     "install-plugin": "./scripts/local-install.sh"
   },
   "dependencies": {
-    "@dfinity/http-auth": "workspace:*"
+    "@icp-sdk/http": "workspace:*"
   }
 }

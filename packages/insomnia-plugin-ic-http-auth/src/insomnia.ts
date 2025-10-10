@@ -1,6 +1,8 @@
+/** biome-ignore-all lint/complexity/noBannedTypes: File copied from Insomnia docs */
+/** biome-ignore-all lint/suspicious/noExplicitAny: File copied from Insomnia docs */
 // types from https://docs.insomnia.rest/insomnia/context-object-reference
 
-import { Readable } from 'node:stream';
+import type { Readable } from 'node:stream';
 
 interface RequestContext {
   getId(): string;

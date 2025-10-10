@@ -1,7 +1,7 @@
-import { epoch, isNil, isNotNil } from './util';
+import type { DelegationChain } from '@dfinity/identity';
 import { base64Encode } from './base64';
 import { generateNonce, sha256 } from './crypto';
-import { DelegationChain } from '@dfinity/identity';
+import { epoch, isNil, isNotNil } from './util';
 
 const DEFAULT_EXPIRATION_TIME_MS = 5 * 60 * 1_000; // 5 minutes
 const DEFAULT_SIG_NAME = 'sig';
@@ -68,9 +68,7 @@ export async function addHttpMessageSignatureToRequest(
   });
 }
 
-async function contentDigestHeader(
-  body: ArrayBuffer | ArrayBufferView | string,
-): Promise<[string, string]> {
+async function contentDigestHeader(body: BufferSource | string): Promise<[string, string]> {
   const hash = await sha256(body);
   const hashBase64 = base64Encode(new Uint8Array(hash));
 
@@ -79,7 +77,7 @@ async function contentDigestHeader(
 
 async function addContentDigestHeader(
   headers: Headers,
-  body: ArrayBuffer | ArrayBufferView | string,
+  body: BufferSource | string,
 ): Promise<string> {
   const existingHeaderValue = headers.get(CONTENT_DIGEST_HEADER_NAME);
   // no need to add the content-digest header if it's already present
@@ -111,10 +109,7 @@ interface SignatureKeyHeaderDelegation {
   sig: string;
 }
 
-function addMessageSignatureHeader(
-  headers: Headers,
-  headerName: string,
-): string {
+function addMessageSignatureHeader(headers: Headers, headerName: string): string {
   headerName = headerName.toLowerCase();
 
   const headerValue = headers.get(headerName);
@@ -134,7 +129,7 @@ export type HttpMessageSignatureParams = {
   url: string | URL;
   method: string;
   headers: Headers;
-  body: ArrayBuffer | ArrayBufferView | string;
+  body: BufferSource | string;
   canisterId: string;
   expirationTimeMs?: number;
   tag?: string | null;
@@ -213,15 +208,13 @@ export async function getHttpMessageSignatureHeaders(
   if (isNotNil(delegationChain)) {
     sigKeyHeader.delegationChain = {
       pubKey: base64Encode(delegationChain.publicKey),
-      delegations: delegationChain.delegations.map(
-        ({ delegation, signature }) => ({
-          delegation: {
-            pubKey: base64Encode(delegation.pubkey),
-            expiration: delegation.expiration.toString(),
-          },
-          sig: base64Encode(signature),
-        }),
-      ),
+      delegations: delegationChain.delegations.map(({ delegation, signature }) => ({
+        delegation: {
+          pubKey: base64Encode(delegation.pubkey),
+          expiration: delegation.expiration.toString(),
+        },
+        sig: base64Encode(signature),
+      })),
     };
   }
 

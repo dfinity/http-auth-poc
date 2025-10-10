@@ -13,7 +13,7 @@
       "candid": "examples/todo-app/src/backend/backend.did",
       "wasm": "target/wasm32-unknown-unknown/release/todo_app_backend.wasm",
       "build": [
-        "pnpm -F todo-app-frontend build",
+        "pnpm -F todo-app-frontend -F @icp-sdk/http build",
         "cargo build --target wasm32-unknown-unknown --release -p todo_app_backend --locked"
       ],
       "gzip": true,
