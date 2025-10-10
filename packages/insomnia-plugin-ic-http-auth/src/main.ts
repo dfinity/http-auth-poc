@@ -1,32 +1,20 @@
 import { getHttpMessageSignatureHeaders } from '@dfinity/http-auth';
-import type { RequestHook, InsomniaContext } from './insomnia';
-import {
-  exportKeyPair,
-  generateKeyPair,
-  importKeyPair,
-  importKeyPairFromPem,
-} from './crypto';
+import { exportKeyPair, generateKeyPair, importKeyPair, importKeyPairFromPem } from './crypto';
+import type { InsomniaContext, RequestHook } from './insomnia';
 
 const KEY_PAIR_STORE_KEY = 'ic-http-auth-key-pair';
 const IDENTITY_ENVIRONMENT_VARIABLE_NAME = 'identity';
 const CANISTER_ID_ENVIRONMENT_VARIABLE_NAME = 'canister_id';
 
-const generateKeyPairAndStore = async (
-  context: InsomniaContext,
-): Promise<CryptoKeyPair> => {
+const generateKeyPairAndStore = async (context: InsomniaContext): Promise<CryptoKeyPair> => {
   console.log('Generating and storing new key pair');
   const keyPair = await generateKeyPair();
   const jsonableKeyPair = await exportKeyPair(keyPair);
-  await context.store.setItem(
-    KEY_PAIR_STORE_KEY,
-    JSON.stringify(jsonableKeyPair),
-  );
+  await context.store.setItem(KEY_PAIR_STORE_KEY, JSON.stringify(jsonableKeyPair));
   return keyPair;
 };
 
-const getOrCreateKeyPairInStorage = async (
-  context: InsomniaContext,
-): Promise<CryptoKeyPair> => {
+const getOrCreateKeyPairInStorage = async (context: InsomniaContext): Promise<CryptoKeyPair> => {
   const rawKeyPair = await context.store.getItem(KEY_PAIR_STORE_KEY);
   let keyPair: CryptoKeyPair;
   if (!rawKeyPair) {
@@ -45,9 +33,7 @@ const getOrCreateKeyPairInStorage = async (
   return keyPair;
 };
 
-const loadKeyPair = async (
-  context: InsomniaContext,
-): Promise<CryptoKeyPair> => {
+const loadKeyPair = async (context: InsomniaContext): Promise<CryptoKeyPair> => {
   let keyPair: CryptoKeyPair;
   const envPrivateKeyPem = context.request.getEnvironmentVariable(
     IDENTITY_ENVIRONMENT_VARIABLE_NAME,
@@ -61,7 +47,7 @@ const loadKeyPair = async (
 };
 
 const requestHooks: RequestHook[] = [
-  async context => {
+  async (context) => {
     const keyPair = await loadKeyPair(context);
     const canisterId = context.request.getEnvironmentVariable(
       CANISTER_ID_ENVIRONMENT_VARIABLE_NAME,
@@ -74,9 +60,7 @@ const requestHooks: RequestHook[] = [
       {
         url: context.request.getUrl(),
         method: context.request.getMethod(),
-        headers: new Headers(
-          context.request.getHeaders().map(({ name, value }) => [name, value]),
-        ),
+        headers: new Headers(context.request.getHeaders().map(({ name, value }) => [name, value])),
         body: context.request.getBody().text || '',
         canisterId,
       },

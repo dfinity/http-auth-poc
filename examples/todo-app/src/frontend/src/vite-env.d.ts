@@ -1,10 +1,12 @@
+/** biome-ignore-all lint/complexity/noBannedTypes: Type definition file */
+/** biome-ignore-all lint/correctness/noUnusedVariables: Type definition file */
 /// <reference types="vite/client" />
 
-interface ViteTypeOptions {
+type ViteTypeOptions = {
   // By adding this line, you can make the type of ImportMetaEnv strict
   // to disallow unknown keys.
   // strictImportMetaEnv: unknown
-}
+};
 
 interface ImportMetaEnv {
   readonly DFX_NETWORK: 'ic' | 'local';

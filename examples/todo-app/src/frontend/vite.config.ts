@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
-import solidPlugin from 'vite-plugin-solid';
-import { compression } from 'vite-plugin-compression2';
 import checker from 'vite-plugin-checker';
+import { compression } from 'vite-plugin-compression2';
+import solidPlugin from 'vite-plugin-solid';
 
 export default defineConfig({
   plugins: [
