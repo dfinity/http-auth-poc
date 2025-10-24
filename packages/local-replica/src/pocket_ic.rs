@@ -4,9 +4,10 @@ use ic_gateway::ic_bn_lib::reqwest::Url;
 use pocket_ic::{
     PocketIcBuilder,
     common::rest::{IcpFeatures, IcpFeaturesConfig},
+    nonblocking::PocketIc,
 };
 
-pub async fn start_pocket_ic(pic_path: &str) -> Url {
+pub async fn start_pocket_ic(pic_path: &str) -> (PocketIc, Url) {
     let pic = PocketIcBuilder::new()
         .with_server_binary(PathBuf::from(pic_path))
         .with_application_subnet()
@@ -22,5 +23,7 @@ pub async fn start_pocket_ic(pic_path: &str) -> Url {
         })
         .build_async()
         .await;
-    pic.auto_progress().await
+    let url = pic.auto_progress().await;
+
+    (pic, url)
 }

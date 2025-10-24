@@ -17,7 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Start PocketIC server
     let pic_path = format!("{PACKAGE_DIR}/{POCKET_IC_SERVER_BIN_PATH}");
-    let pic_url = start_pocket_ic(&pic_path).await;
+    let (pic, pic_url) = start_pocket_ic(&pic_path).await;
     println!("PocketIC Server URL: {}", pic_url);
 
     // Setup gateway
@@ -40,6 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tokio::signal::ctrl_c().await.ok();
         println!("\nShutting down...");
         shutdown_token.cancel();
+        pic.drop().await;
     };
 
     axum::serve(listener, router)
