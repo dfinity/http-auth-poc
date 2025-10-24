@@ -1,0 +1,30 @@
+[package]
+name = "local-replica"
+
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+homepage.workspace = true
+
+[[bin]]
+name = "replica"
+path = "src/main.rs"
+
+[dependencies]
+pocket-ic = "10.0.0"
+# ic-gateway = { path = "../../../ic-gateway" }
+ic-gateway = { git = "https://github.com/dfinity/ic-gateway", tag = "v0.2.48", default-features = false }
+tokio = { version = "1", features = ["full"] }
+tracing-subscriber = "0.3"
+tokio-util = "0.7"
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
+axum = "0.8"
+axum-server = "0.7"
+tracing-core = "0.1"
+tower = "0.5"
+
+[lints]
+workspace = true
