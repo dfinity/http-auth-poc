@@ -23,6 +23,7 @@ clap = { version = "4", features = ["derive"] }
 anyhow = "1"
 axum = "0.8"
 axum-server = "0.7"
+http-body-util = "0.1"
 tracing-core = "0.1"
 tower = "0.5"
 

@@ -2914,6 +2914,7 @@ dependencies = [
  "axum",
  "axum-server",
  "clap",
+ "http-body-util",
  "ic-gateway",
  "pocket-ic",
  "tokio",
