@@ -47,6 +47,7 @@ pub async fn start_gateway(
         "--ic-unsafe-root-key-fetch",
         "--listen-plain",
         &listen_addr,
+        "--log-requests",
     ];
     let (router, tasks) =
         create_http_gateway_router(gateway_args, replica_url, shutdown_token.clone()).await?;
