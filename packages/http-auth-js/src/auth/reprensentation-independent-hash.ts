@@ -1,3 +1,5 @@
+// Code adapted from https://github.com/dfinity/icp-js-core/blob/0bf4b1b5683bcb53dda3630715e35e78b111f361/packages/agent/src/request_id.ts
+
 import type { Principal } from '@icp-sdk/core/principal';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { concatBytes } from '@noble/hashes/utils.js';

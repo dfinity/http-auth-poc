@@ -1,3 +1,5 @@
+// Code adapted from https://github.com/dfinity/icp-js-core/blob/0bf4b1b5683bcb53dda3630715e35e78b111f361/packages/candid/src/utils/buffer.ts
+
 /**
  * A class that abstracts a pipe-like Uint8Array.
  */
