@@ -1,5 +1,4 @@
 import { AuthClient } from '@icp-sdk/auth/client';
-import type { SignIdentity } from '@icp-sdk/core/agent';
 import type { ECDSAKeyIdentity } from '@icp-sdk/core/identity';
 import { addHttpMessageSignatureToRequest } from '@icp-sdk/http/auth';
 import {
@@ -35,12 +34,10 @@ async function createAuthClient(): Promise<AuthClient> {
   return await AuthClient.create({ keyType: 'ECDSA' });
 }
 
-function getIdentity(authClient: AuthClient): SignIdentity {
-  return authClient['_key'];
-}
-
-function keyPairFromIdentity(identity: SignIdentity): CryptoKeyPair {
-  return (identity as unknown as ECDSAKeyIdentity).getKeyPair();
+function getIdentity(authClient: AuthClient): ECDSAKeyIdentity {
+  const id = authClient['_key'] as ECDSAKeyIdentity;
+  console.log('user principal:', id.getPrincipal().toText());
+  return id;
 }
 
 function authFromAuthClient(authClient: AuthClient | undefined): LoginResponse | undefined {
@@ -52,7 +49,7 @@ function authFromAuthClient(authClient: AuthClient | undefined): LoginResponse |
     return undefined;
   }
   return {
-    keyPair: keyPairFromIdentity(identity),
+    keyPair: identity.getKeyPair(),
   };
 }
 

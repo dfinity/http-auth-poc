@@ -44,8 +44,8 @@ export async function addHttpMessageSignatureToRequest(
   // Step 1: Encode the HTTP request to BHTTP binary format
   const encoder = new BHttpEncoder();
   const clonedReq = req.clone();
-  const binaryRequest = await encoder.encodeRequest(clonedReq);
-  const arg = new Uint8Array(binaryRequest);
+  const arg = await encoder.encodeRequest(clonedReq);
+  console.log('arg:', base64Encode(arg), 'length:', arg.length);
 
   // Step 2: Create the map
   const canisterIdPrincipal = Principal.fromText(canisterId);
@@ -54,6 +54,7 @@ export async function addHttpMessageSignatureToRequest(
   const publicKeySpki = await crypto.subtle.exportKey('spki', keyPair.publicKey);
   const publicKeyBytes = new Uint8Array(publicKeySpki);
   const senderPrincipal = Principal.selfAuthenticating(publicKeyBytes);
+  console.log('sender principal:', senderPrincipal.toText());
 
   // Generate or use provided nonce
   const nonceBytes = nonce || generateNonce();
@@ -71,6 +72,7 @@ export async function addHttpMessageSignatureToRequest(
     nonce: nonceBytes,
     arg,
   };
+  console.log('request map:', JSON.stringify(requestMap, null, 2));
 
   // Step 3: Hash the map
   const mapHash = hashOfMap(requestMap);
