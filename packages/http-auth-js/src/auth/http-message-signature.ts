@@ -1,7 +1,8 @@
-import type { DelegationChain } from '@dfinity/identity';
+import { BHttpEncoder } from '@dajiaji/bhttp';
+import { Principal } from '@icp-sdk/core/principal';
 import { base64Encode } from './base64';
-import { generateNonce, sha256 } from './crypto';
-import { epoch, isNil, isNotNil } from './util';
+import { generateNonce } from './crypto';
+import { hashOfMap } from './reprensentation-independent-hash';
 
 const DEFAULT_EXPIRATION_TIME_MS = 5 * 60 * 1_000; // 5 minutes
 const DEFAULT_SIG_NAME = 'sig';
@@ -9,28 +10,16 @@ const DEFAULT_SIG_NAME = 'sig';
 const SIGNATURE_HEADER_NAME = 'signature';
 const SIGNATURE_INPUT_HEADER_NAME = 'signature-input';
 const SIGNATURE_KEY_HEADER_NAME = 'signature-key';
-const CONTENT_DIGEST_HEADER_NAME = 'content-digest';
+const IC_INCLUDE_HEADERS_NAME = 'ic-include-headers';
 
-function signatureTimestamps(expirationTimeMs: number): {
-  created: number;
-  expires: number;
-} {
-  const createdDate = new Date();
-  const expirationDate = new Date(createdDate.getTime() + expirationTimeMs);
-  return {
-    created: epoch(createdDate),
-    expires: epoch(expirationDate),
-  };
-}
+const NANOSECONDS_PER_MILLISECOND = BigInt(1_000_000);
 
 export type HttpMessageSignatureRequestParams = {
   canisterId: string;
   keyPair: CryptoKeyPair;
   expirationTimeMs?: number;
-  delegationChain?: DelegationChain;
   sigName?: string | null;
-  tag?: string | null;
-  nonceBase64?: string | null;
+  nonce?: Uint8Array | null;
 };
 
 export async function addHttpMessageSignatureToRequest(
@@ -38,192 +27,98 @@ export async function addHttpMessageSignatureToRequest(
   {
     canisterId,
     keyPair,
-    expirationTimeMs,
-    delegationChain,
-    sigName,
-    tag,
-    nonceBase64,
+    expirationTimeMs = DEFAULT_EXPIRATION_TIME_MS,
+    sigName = DEFAULT_SIG_NAME,
+    nonce,
   }: HttpMessageSignatureRequestParams,
 ): Promise<void> {
-  const signatureHeaders = await getHttpMessageSignatureHeaders(
+  // Step 0: Add IC-Include-Headers to the request before encoding
+  // This strengthens security by including it in the signed representation
+  const headerNames: string[] = [];
+  req.headers.forEach((_value, key) => {
+    headerNames.push(key);
+  });
+  const icIncludeHeaders = headerNames.join(';');
+  req.headers.set(IC_INCLUDE_HEADERS_NAME, icIncludeHeaders);
+
+  // Step 1: Encode the HTTP request to BHTTP binary format
+  const encoder = new BHttpEncoder();
+  const clonedReq = req.clone();
+  const binaryRequest = await encoder.encodeRequest(clonedReq);
+  const arg = new Uint8Array(binaryRequest);
+
+  // Step 2: Create the map
+  const canisterIdPrincipal = Principal.fromText(canisterId);
+
+  // Get the sender principal from the public key
+  const publicKeySpki = await crypto.subtle.exportKey('spki', keyPair.publicKey);
+  const publicKeyBytes = new Uint8Array(publicKeySpki);
+  const senderPrincipal = Principal.selfAuthenticating(publicKeyBytes);
+
+  // Generate or use provided nonce
+  const nonceBytes = nonce || generateNonce();
+
+  // Calculate ingress expiry in nanoseconds
+  const expiryDate = new Date(Date.now() + expirationTimeMs);
+  const ingressExpiryNs = BigInt(expiryDate.getTime()) * NANOSECONDS_PER_MILLISECOND;
+
+  const requestMap = {
+    request_type: 'call',
+    canister_id: canisterIdPrincipal,
+    method_name: 'http_request_update',
+    ingress_expiry: ingressExpiryNs,
+    sender: senderPrincipal,
+    nonce: nonceBytes,
+    arg,
+  };
+
+  // Step 3: Hash the map
+  const mapHash = hashOfMap(requestMap);
+
+  // Step 4: Sign the hash
+  const signature = await crypto.subtle.sign(
     {
-      keyPair,
-      delegationChain,
+      name: 'ECDSA',
+      hash: { name: 'SHA-256' },
     },
-    {
-      url: req.url,
-      method: req.method,
-      headers: req.headers,
-      body: await req.clone().arrayBuffer(),
-      canisterId,
-      expirationTimeMs,
-      sigName,
-      tag,
-      nonceBase64,
-    },
+    keyPair.privateKey,
+    mapHash as BufferSource,
   );
 
-  signatureHeaders.forEach(([headerName, headerValue]) => {
-    req.headers.set(headerName, headerValue);
-  });
-}
+  // Step 5: Create the HTTP headers
+  const encodedSignature = base64Encode(signature);
+  const encodedPublicKey = base64Encode(publicKeyBytes);
 
-async function contentDigestHeader(body: BufferSource | string): Promise<[string, string]> {
-  const hash = await sha256(body);
-  const hashBase64 = base64Encode(new Uint8Array(hash));
+  // Create Signature-Input header (all fields except 'arg')
+  const signatureInput = Object.entries(requestMap)
+    .filter(([key]) => key !== 'arg')
+    .map(([key, value]) => {
+      if (value instanceof Principal) {
+        return `${key}=${value.toText()}`;
+      }
+      if (value instanceof Uint8Array) {
+        return `${key}=${base64Encode(value)}`;
+      }
+      if (typeof value === 'bigint') {
+        return `${key}=${value.toString()}`;
+      }
+      return `${key}=${value}`;
+    })
+    .join(';');
 
-  return [CONTENT_DIGEST_HEADER_NAME, `SHA-256=${hashBase64}`];
-}
+  // Create Signature-Key header (without delegation chain for now)
+  const sigKeyHeader: SignatureKeyHeader = {
+    pubKey: encodedPublicKey,
+  };
+  const encodedSigKeyHeader = base64Encode(JSON.stringify(sigKeyHeader));
 
-async function addContentDigestHeader(
-  headers: Headers,
-  body: BufferSource | string,
-): Promise<string> {
-  const existingHeaderValue = headers.get(CONTENT_DIGEST_HEADER_NAME);
-  // no need to add the content-digest header if it's already present
-  if (existingHeaderValue) {
-    return existingHeaderValue;
-  }
-
-  const [headerName, headerValue] = await contentDigestHeader(body);
-  headers.set(headerName, headerValue);
-  return headerValue;
+  // Set the authentication headers on the request
+  // Note: IC-Include-Headers was already set at the beginning
+  req.headers.set(SIGNATURE_HEADER_NAME, `${sigName}=:${encodedSignature}:`);
+  req.headers.set(SIGNATURE_INPUT_HEADER_NAME, `${sigName}=${signatureInput}`);
+  req.headers.set(SIGNATURE_KEY_HEADER_NAME, `${sigName}=:${encodedSigKeyHeader}:`);
 }
 
 interface SignatureKeyHeader {
   pubKey: string;
-  delegationChain?: SignatureKeyHeaderDelegationChain | null;
-}
-
-interface SignatureKeyHeaderDelegationChain {
-  pubKey: string;
-  delegations: SignatureKeyHeaderDelegation[];
-}
-
-interface SignatureKeyHeaderDelegation {
-  delegation: {
-    pubKey: string;
-    expiration: string;
-    targets?: string[] | null;
-  };
-  sig: string;
-}
-
-function addMessageSignatureHeader(headers: Headers, headerName: string): string {
-  headerName = headerName.toLowerCase();
-
-  const headerValue = headers.get(headerName);
-  if (isNil(headerValue)) {
-    throw new Error(`Required ${headerName} header is missing from request.`);
-  }
-
-  return `"${headerName}": ${headerValue}\n`;
-}
-
-export type HttpMessageSignatureIdentity = {
-  keyPair: CryptoKeyPair;
-  delegationChain?: DelegationChain;
-};
-
-export type HttpMessageSignatureParams = {
-  url: string | URL;
-  method: string;
-  headers: Headers;
-  body: BufferSource | string;
-  canisterId: string;
-  expirationTimeMs?: number;
-  tag?: string | null;
-  sigName?: string | null;
-  nonceBase64?: string | null;
-};
-
-export async function getHttpMessageSignatureHeaders(
-  { keyPair, delegationChain }: HttpMessageSignatureIdentity,
-  {
-    url: urlParam,
-    method,
-    headers,
-    body,
-    // [TODO] - add a component that represents the target canister
-    canisterId: _canisterId,
-    tag,
-    sigName = DEFAULT_SIG_NAME,
-    expirationTimeMs = DEFAULT_EXPIRATION_TIME_MS,
-    nonceBase64,
-  }: HttpMessageSignatureParams,
-): Promise<[string, string][]> {
-  const url = new URL(urlParam);
-
-  const contentDigestHeaderValue = await addContentDigestHeader(headers, body);
-
-  const { created, expires } = signatureTimestamps(expirationTimeMs);
-  const nonce = nonceBase64 || generateNonce();
-
-  let sigInput = '(';
-  let sigBase = '';
-
-  sigInput += `"@method"`;
-  sigBase += `"@method": ${method.toUpperCase()}\n`;
-
-  sigInput += ` "@path"`;
-  sigBase += `"@path": ${url.pathname}\n`;
-
-  sigInput += ` "@query"`;
-  sigBase += `"@query": ${url.search}\n`;
-
-  sigInput += ` "${CONTENT_DIGEST_HEADER_NAME}"`;
-  sigBase += addMessageSignatureHeader(headers, CONTENT_DIGEST_HEADER_NAME);
-
-  sigInput += ')';
-  sigInput += `;keyid="header:${SIGNATURE_KEY_HEADER_NAME}"`;
-  sigInput += `;alg="ecdsa-p256-sha256"`;
-  sigInput += `;created=${created}`;
-  sigInput += `;expires=${expires}`;
-  sigInput += `;nonce="${nonce}"`;
-
-  if (isNotNil(tag)) {
-    sigInput += `;tag="${tag}"`;
-  }
-
-  sigBase += `"@signature-params": ${sigInput}\n`;
-
-  const sig = await crypto.subtle.sign(
-    {
-      name: 'ECDSA',
-      hash: {
-        name: 'SHA-256',
-      },
-    },
-    keyPair.privateKey,
-    new TextEncoder().encode(sigBase),
-  );
-
-  const encodedSig = base64Encode(sig);
-  const publicKey = await crypto.subtle.exportKey('spki', keyPair.publicKey);
-  const encodedPublicKey = base64Encode(publicKey);
-
-  const sigKeyHeader: SignatureKeyHeader = {
-    pubKey: encodedPublicKey,
-  };
-  if (isNotNil(delegationChain)) {
-    sigKeyHeader.delegationChain = {
-      pubKey: base64Encode(delegationChain.publicKey),
-      delegations: delegationChain.delegations.map(({ delegation, signature }) => ({
-        delegation: {
-          pubKey: base64Encode(delegation.pubkey),
-          expiration: delegation.expiration.toString(),
-        },
-        sig: base64Encode(signature),
-      })),
-    };
-  }
-
-  const encodedSigKeyHeader = base64Encode(JSON.stringify(sigKeyHeader));
-
-  return [
-    [SIGNATURE_HEADER_NAME, `${sigName}=:${encodedSig}:`],
-    [SIGNATURE_INPUT_HEADER_NAME, `${sigName}=${sigInput}`],
-    [SIGNATURE_KEY_HEADER_NAME, `${sigName}=:${encodedSigKeyHeader}:`],
-    [CONTENT_DIGEST_HEADER_NAME, contentDigestHeaderValue],
-  ];
 }

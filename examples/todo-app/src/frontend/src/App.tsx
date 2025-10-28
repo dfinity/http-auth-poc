@@ -1,5 +1,6 @@
-import { AuthClient } from '@dfinity/auth-client';
-import type { DelegationChain, DelegationIdentity, ECDSAKeyIdentity } from '@dfinity/identity';
+import { AuthClient } from '@icp-sdk/auth/client';
+import type { SignIdentity } from '@icp-sdk/core/agent';
+import type { ECDSAKeyIdentity } from '@icp-sdk/core/identity';
 import { addHttpMessageSignatureToRequest } from '@icp-sdk/http/auth';
 import {
   type Component,
@@ -19,7 +20,6 @@ const CANISTER_ID_TODO_APP_BACKEND = import.meta.env.CANISTER_ID_TODO_APP_BACKEN
 
 type LoginResponse = {
   keyPair: CryptoKeyPair;
-  delegationChain: DelegationChain;
 };
 
 type TodoItem = {
@@ -35,27 +35,24 @@ async function createAuthClient(): Promise<AuthClient> {
   return await AuthClient.create({ keyType: 'ECDSA' });
 }
 
-function getIdentity(authClient: AuthClient): DelegationIdentity {
-  return authClient.getIdentity() as DelegationIdentity;
+function getIdentity(authClient: AuthClient): SignIdentity {
+  return authClient['_key'];
 }
 
-function keyPairFromIdentity(identity: DelegationIdentity): CryptoKeyPair {
-  // biome-ignore lint/complexity/useLiteralKeys: Field is private
-  return (identity['_inner'] as ECDSAKeyIdentity).getKeyPair();
+function keyPairFromIdentity(identity: SignIdentity): CryptoKeyPair {
+  return (identity as unknown as ECDSAKeyIdentity).getKeyPair();
 }
 
 function authFromAuthClient(authClient: AuthClient | undefined): LoginResponse | undefined {
-  if (!authClient || !authClient.isAuthenticated()) {
+  if (!authClient) {
     return undefined;
   }
   const identity = getIdentity(authClient);
   if (identity.getPrincipal().isAnonymous()) {
     return undefined;
   }
-  const delegation = identity.getDelegation();
   return {
     keyPair: keyPairFromIdentity(identity),
-    delegationChain: delegation,
   };
 }
 
@@ -67,7 +64,6 @@ async function fetchTodos(auth: LoginResponse | undefined): Promise<{ todos: Tod
   const req = new Request('/api/todos');
   await addHttpMessageSignatureToRequest(req, {
     keyPair: auth.keyPair,
-    delegationChain: auth.delegationChain,
     canisterId: CANISTER_ID_TODO_APP_BACKEND,
   });
 
@@ -88,7 +84,6 @@ async function fetchTodoById(
     const req = new Request(`/api/todos/${id}`);
     await addHttpMessageSignatureToRequest(req, {
       keyPair: auth.keyPair,
-      delegationChain: auth.delegationChain,
       canisterId: CANISTER_ID_TODO_APP_BACKEND,
     });
 
@@ -126,7 +121,6 @@ async function createTodo(
     });
     await addHttpMessageSignatureToRequest(req, {
       keyPair: auth.keyPair,
-      delegationChain: auth.delegationChain,
       canisterId: CANISTER_ID_TODO_APP_BACKEND,
     });
 
@@ -167,7 +161,6 @@ async function toggleTodoCompleted(
     });
     await addHttpMessageSignatureToRequest(req, {
       keyPair: auth.keyPair,
-      delegationChain: auth.delegationChain,
       canisterId: CANISTER_ID_TODO_APP_BACKEND,
     });
 
@@ -197,7 +190,6 @@ async function deleteTodo(auth: LoginResponse | undefined, id: number): Promise<
     });
     await addHttpMessageSignatureToRequest(req, {
       keyPair: auth.keyPair,
-      delegationChain: auth.delegationChain,
       canisterId: CANISTER_ID_TODO_APP_BACKEND,
     });
 

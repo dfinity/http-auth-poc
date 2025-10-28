@@ -6,9 +6,9 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@dfinity/auth-client": "^2.4.1",
+    "@icp-sdk/auth": "^4.1.1",
+    "@icp-sdk/core": "^4.2.1",
     "@icp-sdk/http": "workspace:*",
-    "@dfinity/identity": "^2.4.1",
     "solid-js": "^1.9.6"
   },
   "devDependencies": {

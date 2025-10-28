@@ -14,7 +14,7 @@ path = "src/main.rs"
 
 [dependencies]
 pocket-ic = "10.0.0"
-ic-gateway = { git = "https://github.com/dfinity/ic-gateway", tag = "v0.2.48", default-features = false }
+ic-gateway = { path = "../../../ic-gateway" }
 tokio = { version = "1", features = ["full"] }
 tracing-subscriber = "0.3"
 tokio-util = "0.7"

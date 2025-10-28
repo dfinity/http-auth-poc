@@ -48,6 +48,8 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@dfinity/identity": "^2.4.1"
+    "@dajiaji/bhttp": "jsr:^0.3.6",
+    "@icp-sdk/core": "^4.2.1",
+    "@noble/hashes": "^1.8.0"
   }
 }
