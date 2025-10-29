@@ -4,3 +4,6 @@ target/
 dist/
 .env
 .canbench/
+
+.DS_Store
+pocket-ic
