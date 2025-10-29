@@ -3,7 +3,7 @@ import { Principal } from '@icp-sdk/core/principal';
 import { concatBytes } from '@noble/hashes/utils';
 import { base64Encode } from './base64';
 import { generateNonce } from './crypto';
-import { hashOfMap } from './reprensentation-independent-hash';
+import { hashOfMap } from './representation-independent-hash';
 
 const DEFAULT_EXPIRATION_TIME_MS = 5 * 60 * 1_000; // 5 minutes
 const DEFAULT_SIG_NAME = 'sig';
