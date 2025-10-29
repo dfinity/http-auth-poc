@@ -21,83 +21,113 @@ export type HttpMessageSignatureRequestParams = {
   canisterId: string;
   keyPair: CryptoKeyPair;
   expirationTimeMs?: number;
-  sigName?: string | null;
-  nonce?: Uint8Array | null;
+  sigName?: string;
+  nonce?: Uint8Array;
 };
 
-export async function addHttpMessageSignatureToRequest(
-  req: Request,
-  {
-    canisterId,
-    keyPair,
-    expirationTimeMs = DEFAULT_EXPIRATION_TIME_MS,
-    sigName = DEFAULT_SIG_NAME,
-    nonce,
-  }: HttpMessageSignatureRequestParams,
-): Promise<void> {
-  // Step 0: Add IC-Include-Headers to the request before encoding
-  // This strengthens security by including it in the signed representation
+type RequestMap = {
+  request_type: string;
+  canister_id: Principal;
+  method_name: string;
+  ingress_expiry: bigint;
+  sender: Principal;
+  nonce: Uint8Array;
+  arg: Uint8Array;
+};
+
+/**
+ * Adds IC-Include-Headers to the request before encoding.
+ * This strengthens security by including it in the signed representation.
+ */
+function addIcIncludeHeadersToRequest(req: Request): void {
   const headerNames: string[] = [IC_INCLUDE_HEADERS_NAME];
   req.headers.forEach((_value, key) => {
     headerNames.push(key);
   });
   const icIncludeHeaders = headerNames.join(';');
   req.headers.set(IC_INCLUDE_HEADERS_NAME, icIncludeHeaders);
+}
 
-  // Step 1: Encode the HTTP request to BHTTP binary format
-  // NOTE: according to Mozilla docs, headers are accessed in lexicographical order when iterated over,
-  // see https://developer.mozilla.org/en-US/docs/Web/API/Headers.
-  // The same must be applied on the HTTP Gateway side when constructing the binary representation of the request,
-  // to ensure the signature stays valid.
+/**
+ * Encodes the HTTP request to BHTTP binary format.
+ * NOTE: according to Mozilla docs, headers are accessed in lexicographical order when iterated over,
+ * see https://developer.mozilla.org/en-US/docs/Web/API/Headers.
+ * The same must be applied on the HTTP Gateway side when constructing the binary representation of the request,
+ * to ensure the signature stays valid.
+ */
+async function encodeRequestToBHttp(req: Request): Promise<Uint8Array> {
   const encoder = new BHttpEncoder();
   const clonedReq = req.clone();
-  const arg = await encoder.encodeRequest(clonedReq);
+  return encoder.encodeRequest(clonedReq);
+}
 
-  // Step 2: Create the map
-  const canisterIdPrincipal = Principal.fromText(canisterId);
+/**
+ * Exports the public key as a byte array.
+ */
+async function exportPublicKeyBytes(publicKey: CryptoKey): Promise<Uint8Array> {
+  const publicKeySpki = await crypto.subtle.exportKey('spki', publicKey);
+  return new Uint8Array(publicKeySpki);
+}
 
-  // Get the sender principal from the public key
-  const publicKeySpki = await crypto.subtle.exportKey('spki', keyPair.publicKey);
-  const publicKeyBytes = new Uint8Array(publicKeySpki);
-  const senderPrincipal = Principal.selfAuthenticating(publicKeyBytes);
+/**
+ * Calculates the ingress expiry timestamp in nanoseconds.
+ */
+function calculateIngressExpiry(expirationTimeMs: number): bigint {
+  const expiryTimestampMs = Date.now() + expirationTimeMs;
+  return BigInt(expiryTimestampMs) * NANOSECONDS_PER_MILLISECOND;
+}
+
+/**
+ * Builds the request map containing all fields needed for signing.
+ */
+function buildRequestMap(params: {
+  canisterId: string;
+  publicKeyBytes: Uint8Array;
+  nonce: Uint8Array;
+  ingressExpiry: bigint;
+  arg: Uint8Array;
+}): RequestMap {
+  const canisterIdPrincipal = Principal.fromText(params.canisterId);
+  const senderPrincipal = Principal.selfAuthenticating(params.publicKeyBytes);
+
   console.log('sender principal:', senderPrincipal.toText());
 
-  // Generate or use provided nonce
-  const nonceBytes = nonce || generateNonce();
-
-  // Calculate ingress expiry in nanoseconds
-  const expiryDate = new Date(Date.now() + expirationTimeMs);
-  const ingressExpiryNs = BigInt(expiryDate.getTime()) * NANOSECONDS_PER_MILLISECOND;
-
-  const requestMap = {
+  return {
     request_type: 'call',
     canister_id: canisterIdPrincipal,
     method_name: 'http_request_update',
-    ingress_expiry: ingressExpiryNs,
+    ingress_expiry: params.ingressExpiry,
     sender: senderPrincipal,
-    nonce: nonceBytes,
-    arg,
+    nonce: params.nonce,
+    arg: params.arg,
   };
+}
 
-  // Step 3: Hash the map
+/**
+ * Signs the request map using the private key.
+ * Returns the signature as an ArrayBuffer.
+ */
+async function signRequestMap(requestMap: RequestMap, privateKey: CryptoKey): Promise<ArrayBuffer> {
   const mapHash = hashOfMap(requestMap);
 
-  // Step 4: Sign the hash
   const signature = await crypto.subtle.sign(
     {
       name: 'ECDSA',
       hash: { name: 'SHA-256' },
     },
-    keyPair.privateKey,
+    privateKey,
     concatBytes(IC_REQUEST_DOMAIN_SEPARATOR, mapHash) as BufferSource,
   );
 
-  // Step 5: Create the HTTP headers
-  const encodedSignature = base64Encode(signature);
-  const encodedPublicKey = base64Encode(publicKeyBytes);
+  return signature;
+}
 
-  // Create Signature-Input header (all fields except 'arg')
-  const signatureInput = Object.entries(requestMap)
+/**
+ * Creates the Signature-Input header value from the request map.
+ * Includes all fields except 'arg'.
+ */
+function createSignatureInput(requestMap: RequestMap): string {
+  return Object.entries(requestMap)
     .filter(([key]) => key !== 'arg')
     .map(([key, value]) => {
       if (value instanceof Principal) {
@@ -112,6 +142,30 @@ export async function addHttpMessageSignatureToRequest(
       return `${key}=${value}`;
     })
     .join(';');
+}
+
+type SetAuthenticationHeadersParams = {
+  signature: ArrayBuffer;
+  publicKeyBytes: Uint8Array;
+  requestMap: RequestMap;
+  signatureName: string;
+};
+
+type SignatureKeyHeader = {
+  pubKey: string;
+};
+
+/**
+ * Sets all authentication headers on the request.
+ */
+function setAuthenticationHeaders(
+  req: Request,
+  { signature, publicKeyBytes, requestMap, signatureName }: SetAuthenticationHeadersParams,
+): void {
+  const encodedSignature = base64Encode(signature);
+  const encodedPublicKey = base64Encode(publicKeyBytes);
+
+  const signatureInput = createSignatureInput(requestMap);
 
   // Create Signature-Key header (without delegation chain for now)
   const sigKeyHeader: SignatureKeyHeader = {
@@ -119,13 +173,51 @@ export async function addHttpMessageSignatureToRequest(
   };
   const encodedSigKeyHeader = base64Encode(JSON.stringify(sigKeyHeader));
 
-  // Set the authentication headers on the request
-  // Note: X-IC-Include-Headers was already set at the beginning
-  req.headers.set(SIGNATURE_HEADER_NAME, `${sigName}=:${encodedSignature}:`);
-  req.headers.set(SIGNATURE_INPUT_HEADER_NAME, `${sigName}=${signatureInput}`);
-  req.headers.set(SIGNATURE_KEY_HEADER_NAME, `${sigName}=:${encodedSigKeyHeader}:`);
+  // Set all authentication headers
+  req.headers.set(SIGNATURE_HEADER_NAME, `${signatureName}=:${encodedSignature}:`);
+  req.headers.set(SIGNATURE_INPUT_HEADER_NAME, `${signatureName}=${signatureInput}`);
+  req.headers.set(SIGNATURE_KEY_HEADER_NAME, `${signatureName}=:${encodedSigKeyHeader}:`);
 }
 
-interface SignatureKeyHeader {
-  pubKey: string;
+/**
+ * Main function that orchestrates the HTTP message signature process.
+ * Adds authentication headers to the request by:
+ * 1. Adding IC-Include-Headers
+ * 2. Encoding the request to BHTTP
+ * 3. Building and signing the request map
+ * 4. Setting authentication headers
+ */
+export async function addHttpMessageSignatureToRequest(
+  req: Request,
+  {
+    canisterId,
+    keyPair,
+    expirationTimeMs = DEFAULT_EXPIRATION_TIME_MS,
+    sigName = DEFAULT_SIG_NAME,
+    nonce,
+  }: HttpMessageSignatureRequestParams,
+): Promise<void> {
+  addIcIncludeHeadersToRequest(req);
+
+  const arg = await encodeRequestToBHttp(req);
+  const publicKeyBytes = await exportPublicKeyBytes(keyPair.publicKey);
+  const nonceBytes = nonce || generateNonce();
+  const ingressExpiry = calculateIngressExpiry(expirationTimeMs);
+
+  const requestMap = buildRequestMap({
+    canisterId,
+    publicKeyBytes,
+    nonce: nonceBytes,
+    ingressExpiry,
+    arg,
+  });
+
+  const signature = await signRequestMap(requestMap, keyPair.privateKey);
+
+  setAuthenticationHeaders(req, {
+    signature,
+    publicKeyBytes,
+    requestMap,
+    signatureName: sigName,
+  });
 }
