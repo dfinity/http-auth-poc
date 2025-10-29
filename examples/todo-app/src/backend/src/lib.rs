@@ -1,7 +1,6 @@
 mod api;
 mod assets;
 mod http;
-mod root_key;
 mod router;
 mod todo;
 
@@ -11,19 +10,16 @@ use ic_cdk::*;
 use ic_http_certification::{HttpRequest, HttpResponse};
 use matchit::Router;
 use once_cell::sync::OnceCell;
-use root_key::init_root_key;
 use router::MethodRouter;
 use todo::*;
 
 #[init]
 fn init() {
-    init_root_key();
     certify_all_assets();
 }
 
 #[post_upgrade]
 fn post_upgrade() {
-    init_root_key();
     certify_all_assets();
 }
 

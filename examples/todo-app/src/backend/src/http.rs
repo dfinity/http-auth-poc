@@ -1,57 +1,61 @@
 use std::{io::Cursor, str::FromStr};
 
-use http_bytes::{
-    http::{HeaderValue, Response, Version, header::HeaderName},
-    parse_request_header_easy, write_response_header,
-};
+use bhttp::{Message, Mode, StatusCode};
 use ic_http_certification::{HttpRequest, HttpResponse, Method};
 
 pub fn decode_args<'a>(bytes: Vec<u8>) -> HttpRequest<'a> {
-    let (request, body) = parse_request_header_easy(&bytes).unwrap().unwrap();
-    let (parts, _) = request.into_parts();
+    let mut cursor = Cursor::new(bytes);
+    let msg = Message::read_bhttp(&mut cursor).unwrap();
+    let content = msg.content().to_vec();
+
+    let control = msg.control();
+    let (method_bytes, path_bytes) = match control {
+        bhttp::ControlData::Request {
+            method,
+            scheme: _,
+            authority: _,
+            path,
+        } => (method, path),
+        _ => panic!("Expected request, got response"),
+    };
+
+    let method_str = String::from_utf8_lossy(method_bytes);
+    let path_str = String::from_utf8_lossy(path_bytes);
+
+    let headers: Vec<(String, String)> = msg
+        .header()
+        .iter()
+        .map(|field| {
+            (
+                String::from_utf8_lossy(field.name()).to_string(),
+                String::from_utf8_lossy(field.value()).to_string(),
+            )
+        })
+        .collect();
 
     HttpRequest::builder()
-        .with_url(parts.uri.path().to_string())
-        .with_method(Method::from_str(parts.method.as_str()).unwrap())
-        .with_headers(
-            parts
-                .headers
-                .iter()
-                .map(|h| (h.0.to_string(), h.1.to_str().unwrap().to_string()))
-                .collect(),
-        )
-        .with_body(body.to_vec())
+        .with_url(path_str.to_string())
+        .with_method(Method::from_str(&method_str).unwrap())
+        .with_headers(headers)
+        .with_body(content)
         .build()
 }
 
 pub fn encode_result(res: HttpResponse) -> Vec<u8> {
-    let mut res_builder = Response::builder();
-    {
-        let headers = res_builder.headers_mut().unwrap();
-        for (header_name, header_value) in res.headers() {
-            headers.insert(
-                HeaderName::from_str(&header_name).unwrap(),
-                HeaderValue::from_str(&header_value).unwrap(),
-            );
-        }
+    let status = StatusCode::try_from(res.status_code().as_u16()).unwrap();
+    let mut msg = Message::response(status);
 
-        if res.upgrade().unwrap_or(false) {
-            headers.insert(
-                HeaderName::from_str("ic-upgrade").unwrap(),
-                HeaderValue::from_str("true").unwrap(),
-            );
-        }
+    for (header_name, header_value) in res.headers() {
+        msg.put_header(header_name.as_bytes(), header_value.as_bytes());
     }
-    let response = res_builder
-        .status(res.status_code().as_u16())
-        .version(Version::HTTP_11)
-        .body(res.body())
-        .unwrap();
 
-    let mut bytes: Vec<u8> = Vec::new();
-    let mut cursor = Cursor::new(&mut bytes);
-    write_response_header(&response, &mut cursor).unwrap();
-    std::io::Write::write_all(&mut cursor, response.body()).unwrap();
+    if res.upgrade().unwrap_or(false) {
+        msg.put_header(b"ic-upgrade", b"true");
+    }
 
-    bytes
+    msg.write_content(res.body());
+
+    let mut encoded = Vec::new();
+    msg.write_bhttp(Mode::KnownLength, &mut encoded).unwrap();
+    encoded
 }

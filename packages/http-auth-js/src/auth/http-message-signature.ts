@@ -1,5 +1,6 @@
 import { BHttpEncoder } from '@dajiaji/bhttp';
 import { Principal } from '@icp-sdk/core/principal';
+import { concatBytes } from '@noble/hashes/utils';
 import { base64Encode } from './base64';
 import { generateNonce } from './crypto';
 import { hashOfMap } from './reprensentation-independent-hash';
@@ -10,9 +11,11 @@ const DEFAULT_SIG_NAME = 'sig';
 const SIGNATURE_HEADER_NAME = 'signature';
 const SIGNATURE_INPUT_HEADER_NAME = 'signature-input';
 const SIGNATURE_KEY_HEADER_NAME = 'signature-key';
-const IC_INCLUDE_HEADERS_NAME = 'ic-include-headers';
+const IC_INCLUDE_HEADERS_NAME = 'x-ic-include-headers';
 
 const NANOSECONDS_PER_MILLISECOND = BigInt(1_000_000);
+
+const IC_REQUEST_DOMAIN_SEPARATOR = new TextEncoder().encode('\x0Aic-request');
 
 export type HttpMessageSignatureRequestParams = {
   canisterId: string;
@@ -34,7 +37,7 @@ export async function addHttpMessageSignatureToRequest(
 ): Promise<void> {
   // Step 0: Add IC-Include-Headers to the request before encoding
   // This strengthens security by including it in the signed representation
-  const headerNames: string[] = [];
+  const headerNames: string[] = [IC_INCLUDE_HEADERS_NAME];
   req.headers.forEach((_value, key) => {
     headerNames.push(key);
   });
@@ -42,10 +45,13 @@ export async function addHttpMessageSignatureToRequest(
   req.headers.set(IC_INCLUDE_HEADERS_NAME, icIncludeHeaders);
 
   // Step 1: Encode the HTTP request to BHTTP binary format
+  // NOTE: according to Mozilla docs, headers are accessed in lexicographical order when iterated over,
+  // see https://developer.mozilla.org/en-US/docs/Web/API/Headers.
+  // The same must be applied on the HTTP Gateway side when constructing the binary representation of the request,
+  // to ensure the signature stays valid.
   const encoder = new BHttpEncoder();
   const clonedReq = req.clone();
   const arg = await encoder.encodeRequest(clonedReq);
-  console.log('arg:', base64Encode(arg), 'length:', arg.length);
 
   // Step 2: Create the map
   const canisterIdPrincipal = Principal.fromText(canisterId);
@@ -72,7 +78,6 @@ export async function addHttpMessageSignatureToRequest(
     nonce: nonceBytes,
     arg,
   };
-  console.log('request map:', JSON.stringify(requestMap, null, 2));
 
   // Step 3: Hash the map
   const mapHash = hashOfMap(requestMap);
@@ -84,7 +89,7 @@ export async function addHttpMessageSignatureToRequest(
       hash: { name: 'SHA-256' },
     },
     keyPair.privateKey,
-    mapHash as BufferSource,
+    concatBytes(IC_REQUEST_DOMAIN_SEPARATOR, mapHash) as BufferSource,
   );
 
   // Step 5: Create the HTTP headers
@@ -115,7 +120,7 @@ export async function addHttpMessageSignatureToRequest(
   const encodedSigKeyHeader = base64Encode(JSON.stringify(sigKeyHeader));
 
   // Set the authentication headers on the request
-  // Note: IC-Include-Headers was already set at the beginning
+  // Note: X-IC-Include-Headers was already set at the beginning
   req.headers.set(SIGNATURE_HEADER_NAME, `${sigName}=:${encodedSignature}:`);
   req.headers.set(SIGNATURE_INPUT_HEADER_NAME, `${sigName}=${signatureInput}`);
   req.headers.set(SIGNATURE_KEY_HEADER_NAME, `${sigName}=:${encodedSigKeyHeader}:`);

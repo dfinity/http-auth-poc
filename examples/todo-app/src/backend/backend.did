@@ -1,1 +1,3 @@
 // We don't need a Candid declaration :)
+
+service : {}
