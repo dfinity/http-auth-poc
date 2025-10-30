@@ -1,10 +1,8 @@
 import { BHttpEncoder } from '@dajiaji/bhttp';
 import { Principal } from '@icp-sdk/core/principal';
-import { concatBytes } from '@noble/hashes/utils';
 import { base64Encode } from './base64';
 import { generateNonce } from './crypto';
-import { hashOfMap } from './representation-independent-hash';
-import { CallSignatureInput, type SignatureInput } from './signature-input';
+import { CallSignatureInput, ReadStateSignatureInput } from './signature-input';
 
 const DEFAULT_EXPIRATION_TIME_MS = 5 * 60 * 1_000; // 5 minutes
 
@@ -13,15 +11,16 @@ const SIGNATURE_INPUT_HEADER_NAME = 'signature-input';
 const SIGNATURE_KEY_HEADER_NAME = 'signature-key';
 const IC_INCLUDE_HEADERS_NAME = 'x-ic-include-headers';
 
+const SIGNATURES_SEPARATOR = ',';
 const IC_INCLUDE_HEADERS_SEPARATOR = ',';
-
-const SIGNATURE_NAME_CALL = 'sig_call';
-const SIGNATURE_NAME_READ_STATE = 'sig_read_state';
-const SIGNATURE_NAME_QUERY = 'sig_query';
 
 const NANOSECONDS_PER_MILLISECOND = BigInt(1_000_000);
 
-const IC_REQUEST_DOMAIN_SEPARATOR = new TextEncoder().encode('\x0Aic-request');
+enum SignatureName {
+  Call = 'sig_call',
+  ReadState = 'sig_read_state',
+  Query = 'sig_query',
+}
 
 export type SignatureToRequestParams = {
   canisterId: string;
@@ -45,25 +44,43 @@ export async function addSignatureToRequest(
 ): Promise<void> {
   addIcIncludeHeadersToRequest(req);
 
-  const arg = await encodeRequestToBHttp(req);
+  const canisterIdPrincipal = Principal.fromText(canisterId);
   const publicKeyBytes = await exportPublicKeyBytes(keyPair.publicKey);
+  const senderPrincipal = Principal.selfAuthenticating(publicKeyBytes);
   const nonceBytes = nonce || generateNonce();
   const ingressExpiry = calculateIngressExpiry(expirationTimeMs);
+  const arg = await encodeRequestToBHttp(req);
 
   const callSignatureInput = new CallSignatureInput(
-    Principal.fromText(canisterId),
-    Principal.selfAuthenticating(publicKeyBytes),
+    canisterIdPrincipal,
+    senderPrincipal,
     nonceBytes,
     ingressExpiry,
     arg,
   );
-  const callSignature = await signSignatureInput(callSignatureInput, keyPair.privateKey);
+  const callRequestId = callSignatureInput.toRequestId();
+  const callSignature = await signSignatureInput(callRequestId, keyPair.privateKey);
+
+  const readStateSignatureInput = new ReadStateSignatureInput(
+    senderPrincipal,
+    nonceBytes,
+    ingressExpiry,
+    [['request_status', callRequestId]],
+  );
+  const readStateSignature = await signSignatureInput(
+    readStateSignatureInput.toRequestId(),
+    keyPair.privateKey,
+  );
 
   setAuthenticationHeaders(req, {
     signatures: {
       call: {
         signature: callSignature,
         signatureInput: callSignatureInput.toSignatureInputHeaderValue(),
+      },
+      readState: {
+        signature: readStateSignature,
+        signatureInput: readStateSignatureInput.toSignatureInputHeaderValue(),
       },
     },
     publicKeyBytes,
@@ -117,41 +134,34 @@ function calculateIngressExpiry(expirationTimeMs: number): bigint {
  * Returns the signature as an ArrayBuffer.
  */
 async function signSignatureInput(
-  input: SignatureInput,
+  requestId: Uint8Array,
   privateKey: CryptoKey,
 ): Promise<ArrayBuffer> {
-  const map = input.toMap();
-  const mapHash = hashOfMap(map);
-
   const signature = await crypto.subtle.sign(
     {
       name: 'ECDSA',
       hash: { name: 'SHA-256' },
     },
     privateKey,
-    concatBytes(IC_REQUEST_DOMAIN_SEPARATOR, mapHash) as BufferSource,
+    requestId as BufferSource,
   );
 
   return signature;
 }
 
+type SignatureParams = {
+  signature: ArrayBuffer;
+  signatureInput: string;
+};
+
 type SetAuthenticationHeadersParams = {
   signatures:
     | {
-        call: {
-          signature: ArrayBuffer;
-          signatureInput: string;
-        };
-        readState?: {
-          signature: ArrayBuffer;
-          signatureInput: string;
-        };
+        call: SignatureParams;
+        readState?: SignatureParams;
       }
     | {
-        query: {
-          signature: ArrayBuffer;
-          signatureInput: string;
-        };
+        query: SignatureParams;
       };
   publicKeyBytes: Uint8Array;
 };
@@ -172,26 +182,42 @@ function setAuthenticationHeaders(
   let signatureKeyHeaderValue = '';
 
   // Create Signature-Key header (without delegation chain for now)
-  const encodedPublicKey = base64Encode(publicKeyBytes);
   const sigKeyHeader: SignatureKeyHeader = {
-    pubKey: encodedPublicKey,
+    pubKey: base64Encode(publicKeyBytes),
   };
-  const encodedSigKeyHeader = base64Encode(JSON.stringify(sigKeyHeader));
 
   if ('call' in signatures) {
-    signatureHeaderValue += `${SIGNATURE_NAME_CALL}=:${base64Encode(signatures.call.signature)}:`;
-    signatureInputHeaderValue += `${SIGNATURE_NAME_CALL}=${signatures.call.signatureInput}`;
-    signatureKeyHeaderValue += `${SIGNATURE_NAME_CALL}=:${encodedSigKeyHeader}:`;
+    signatureHeaderValue = setSignatureHeaderValue(SignatureName.Call, signatures.call.signature);
+    signatureInputHeaderValue = setSignatureInputHeaderValue(
+      SignatureName.Call,
+      signatures.call.signatureInput,
+    );
+    signatureKeyHeaderValue = setSignatureKeyHeaderValue(SignatureName.Call, sigKeyHeader);
 
     if (signatures.readState) {
-      signatureHeaderValue += `${SIGNATURE_NAME_READ_STATE}=:${base64Encode(signatures.readState.signature)}:`;
-      signatureInputHeaderValue += `${SIGNATURE_NAME_READ_STATE}=${signatures.readState.signatureInput}`;
-      signatureKeyHeaderValue += `${SIGNATURE_NAME_READ_STATE}=:${encodedSigKeyHeader}:`;
+      signatureHeaderValue = appendToSignatureHeaderValue(
+        signatureHeaderValue,
+        SignatureName.ReadState,
+        signatures.readState.signature,
+      );
+      signatureInputHeaderValue = appendToSignatureInputHeaderValue(
+        signatureInputHeaderValue,
+        SignatureName.ReadState,
+        signatures.readState.signatureInput,
+      );
+      signatureKeyHeaderValue = appendToSignatureKeyHeaderValue(
+        signatureKeyHeaderValue,
+        SignatureName.ReadState,
+        sigKeyHeader,
+      );
     }
   } else if ('query' in signatures) {
-    signatureHeaderValue += `${SIGNATURE_NAME_QUERY}=:${base64Encode(signatures.query.signature)}:`;
-    signatureInputHeaderValue += `${SIGNATURE_NAME_QUERY}=${signatures.query.signatureInput}`;
-    signatureKeyHeaderValue += `${SIGNATURE_NAME_QUERY}=:${encodedSigKeyHeader}:`;
+    signatureHeaderValue = setSignatureHeaderValue(SignatureName.Query, signatures.query.signature);
+    signatureInputHeaderValue = setSignatureInputHeaderValue(
+      SignatureName.Query,
+      signatures.query.signatureInput,
+    );
+    signatureKeyHeaderValue = setSignatureKeyHeaderValue(SignatureName.Query, sigKeyHeader);
   } else {
     throw new Error('Invalid signatures');
   }
@@ -200,4 +226,50 @@ function setAuthenticationHeaders(
   req.headers.set(SIGNATURE_HEADER_NAME, signatureHeaderValue);
   req.headers.set(SIGNATURE_INPUT_HEADER_NAME, signatureInputHeaderValue);
   req.headers.set(SIGNATURE_KEY_HEADER_NAME, signatureKeyHeaderValue);
+}
+
+function setSignatureHeaderValue(signatureName: SignatureName, signature: ArrayBuffer): string {
+  return `${signatureName}=:${base64Encode(signature)}:`;
+}
+
+function appendToSignatureHeaderValue(
+  previousSignatureHeaderValue: string,
+  signatureName: SignatureName,
+  signature: ArrayBuffer,
+): string {
+  const signatureValue = setSignatureHeaderValue(signatureName, signature);
+  return [previousSignatureHeaderValue, signatureValue].join(SIGNATURES_SEPARATOR);
+}
+
+function setSignatureInputHeaderValue(
+  signatureName: SignatureName,
+  signatureInput: string,
+): string {
+  return `${signatureName}=${signatureInput}`;
+}
+
+function appendToSignatureInputHeaderValue(
+  previousSignatureInputHeaderValue: string,
+  signatureName: SignatureName,
+  signatureInput: string,
+): string {
+  const signatureInputValue = setSignatureInputHeaderValue(signatureName, signatureInput);
+  return [previousSignatureInputHeaderValue, signatureInputValue].join(SIGNATURES_SEPARATOR);
+}
+
+function setSignatureKeyHeaderValue(
+  signatureName: SignatureName,
+  signatureKey: SignatureKeyHeader,
+): string {
+  const encodedSignatureKey = base64Encode(JSON.stringify(signatureKey));
+  return `${signatureName}=:${encodedSignatureKey}:`;
+}
+
+function appendToSignatureKeyHeaderValue(
+  previousSignatureKeyHeaderValue: string,
+  signatureName: SignatureName,
+  signatureKey: SignatureKeyHeader,
+): string {
+  const signatureKeyValue = setSignatureKeyHeaderValue(signatureName, signatureKey);
+  return [previousSignatureKeyHeaderValue, signatureKeyValue].join(SIGNATURES_SEPARATOR);
 }

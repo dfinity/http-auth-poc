@@ -1,11 +1,12 @@
 import type { Principal } from '@icp-sdk/core/principal';
 import { utf8ToBytes } from '@noble/hashes/utils';
 import { base64Encode } from './base64';
+import { toRequestId } from './request-id';
 
 const SIGNATURE_INPUT_SEPARATOR = ';';
 const SIGNATURE_INPUT_KEY_VALUE_SEPARATOR = '=';
 
-type CommonRequestMap = {
+export type CommonRequestMap = {
   request_type: string;
   sender: Principal;
   nonce?: Uint8Array;
@@ -39,7 +40,7 @@ enum MethodName {
   HttpRequestUpdate = 'http_request_update',
 }
 
-export abstract class SignatureInput<T = CommonRequestMap> {
+export abstract class SignatureInput<T extends CommonRequestMap> {
   public readonly request_type: RequestType;
   public readonly sender: Principal;
   public readonly nonce: Uint8Array | undefined;
@@ -58,7 +59,17 @@ export abstract class SignatureInput<T = CommonRequestMap> {
   }
 
   abstract toSignatureInputHeaderValue(): string;
+  /**
+   * Creates an object representation of the current input.
+   */
   abstract toMap(): T;
+
+  /**
+   * Creates a request id of the current input according to the IC Interface Specification: https://internetcomputer.org/docs/references/ic-interface-spec#http-request-id
+   */
+  toRequestId(): Uint8Array {
+    return toRequestId(this.toMap());
+  }
 }
 
 /**
@@ -116,13 +127,13 @@ export class CallSignatureInput extends SignatureInput<CallRequestMap> {
  * The map of a read_state request according to the IC Interface Specification: https://internetcomputer.org/docs/references/ic-interface-spec#http-read-state
  */
 export class ReadStateSignatureInput extends SignatureInput<ReadStateRequestMap> {
-  public readonly paths: string[][];
+  public readonly paths: Array<Array<string | Uint8Array>>;
 
   constructor(
     sender: Principal,
     nonce: Uint8Array | undefined,
     ingress_expiry: bigint,
-    paths: string[][],
+    paths: Array<Array<string | Uint8Array>>,
   ) {
     super(RequestType.ReadState, sender, nonce, ingress_expiry);
     this.paths = paths;
@@ -134,7 +145,7 @@ export class ReadStateSignatureInput extends SignatureInput<ReadStateRequestMap>
       sender: this.sender,
       nonce: this.nonce,
       ingress_expiry: this.ingress_expiry,
-      paths: this.paths.map((path) => path.map((p) => utf8ToBytes(p))),
+      paths: pathsToBytes(this.paths),
     };
   }
 
@@ -147,9 +158,7 @@ export class ReadStateSignatureInput extends SignatureInput<ReadStateRequestMap>
       components.push(signatureInputNonce(this.nonce));
     }
     components.push(signatureInputIngressExpiry(this.ingress_expiry));
-    components.push(
-      signatureInputKeyValuePair('paths', this.paths.map((path) => path.join('/')).join(',')),
-    );
+    components.push(signatureInputKeyValuePair('paths', pathsToStrings(this.paths).join(',')));
 
     return components.join(SIGNATURE_INPUT_SEPARATOR);
   }
@@ -228,4 +237,14 @@ function signatureInputPrincipal(key: string, principal: Principal): string {
 
 function signatureInputKeyValuePair(key: string, value: string): string {
   return `${key}${SIGNATURE_INPUT_KEY_VALUE_SEPARATOR}${value}`;
+}
+
+function pathsToStrings(paths: Array<Array<string | Uint8Array>>): string[] {
+  return paths.map((path) =>
+    path.map((p) => (typeof p === 'string' ? p : base64Encode(p))).join('/'),
+  );
+}
+
+function pathsToBytes(paths: Array<Array<string | Uint8Array>>): Uint8Array[][] {
+  return paths.map((path) => path.map((p) => (typeof p === 'string' ? utf8ToBytes(p) : p)));
 }
