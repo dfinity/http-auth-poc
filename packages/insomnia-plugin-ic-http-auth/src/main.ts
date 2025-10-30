@@ -1,4 +1,4 @@
-import { addHttpMessageSignatureToRequest } from '@icp-sdk/http/auth';
+import { addSignatureToRequest } from '@icp-sdk/http/auth';
 import { exportKeyPair, generateKeyPair, importKeyPair, importKeyPairFromPem } from './crypto';
 import type { InsomniaContext, RequestHook } from './insomnia';
 
@@ -62,7 +62,7 @@ const requestHooks: RequestHook[] = [
       body: context.request.getBody().text || '',
     });
 
-    await addHttpMessageSignatureToRequest(req, {
+    await addSignatureToRequest(req, {
       keyPair,
       canisterId,
     });

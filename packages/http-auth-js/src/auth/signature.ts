@@ -23,13 +23,52 @@ const NANOSECONDS_PER_MILLISECOND = BigInt(1_000_000);
 
 const IC_REQUEST_DOMAIN_SEPARATOR = new TextEncoder().encode('\x0Aic-request');
 
-export type HttpMessageSignatureRequestParams = {
+export type SignatureToRequestParams = {
   canisterId: string;
   keyPair: CryptoKeyPair;
   expirationTimeMs?: number;
   sigName?: string;
   nonce?: Uint8Array;
 };
+
+/**
+ * Adds the signature headers to the request.
+ */
+export async function addSignatureToRequest(
+  req: Request,
+  {
+    canisterId,
+    keyPair,
+    expirationTimeMs = DEFAULT_EXPIRATION_TIME_MS,
+    nonce,
+  }: SignatureToRequestParams,
+): Promise<void> {
+  addIcIncludeHeadersToRequest(req);
+
+  const arg = await encodeRequestToBHttp(req);
+  const publicKeyBytes = await exportPublicKeyBytes(keyPair.publicKey);
+  const nonceBytes = nonce || generateNonce();
+  const ingressExpiry = calculateIngressExpiry(expirationTimeMs);
+
+  const callSignatureInput = new CallSignatureInput(
+    Principal.fromText(canisterId),
+    Principal.selfAuthenticating(publicKeyBytes),
+    nonceBytes,
+    ingressExpiry,
+    arg,
+  );
+  const callSignature = await signSignatureInput(callSignatureInput, keyPair.privateKey);
+
+  setAuthenticationHeaders(req, {
+    signatures: {
+      call: {
+        signature: callSignature,
+        signatureInput: callSignatureInput.toSignatureInputHeaderValue(),
+      },
+    },
+    publicKeyBytes,
+  });
+}
 
 /**
  * Adds IC-Include-Headers to the request before encoding.
@@ -161,48 +200,4 @@ function setAuthenticationHeaders(
   req.headers.set(SIGNATURE_HEADER_NAME, signatureHeaderValue);
   req.headers.set(SIGNATURE_INPUT_HEADER_NAME, signatureInputHeaderValue);
   req.headers.set(SIGNATURE_KEY_HEADER_NAME, signatureKeyHeaderValue);
-}
-
-/**
- * Main function that orchestrates the HTTP message signature process.
- * Adds authentication headers to the request by:
- * 1. Adding IC-Include-Headers
- * 2. Encoding the request to BHTTP
- * 3. Building and signing the request map
- * 4. Setting authentication headers
- */
-export async function addHttpMessageSignatureToRequest(
-  req: Request,
-  {
-    canisterId,
-    keyPair,
-    expirationTimeMs = DEFAULT_EXPIRATION_TIME_MS,
-    nonce,
-  }: HttpMessageSignatureRequestParams,
-): Promise<void> {
-  addIcIncludeHeadersToRequest(req);
-
-  const arg = await encodeRequestToBHttp(req);
-  const publicKeyBytes = await exportPublicKeyBytes(keyPair.publicKey);
-  const nonceBytes = nonce || generateNonce();
-  const ingressExpiry = calculateIngressExpiry(expirationTimeMs);
-
-  const callSignatureInput = new CallSignatureInput(
-    Principal.fromText(canisterId),
-    Principal.selfAuthenticating(publicKeyBytes),
-    nonceBytes,
-    ingressExpiry,
-    arg,
-  );
-  const callSignature = await signSignatureInput(callSignatureInput, keyPair.privateKey);
-
-  setAuthenticationHeaders(req, {
-    signatures: {
-      call: {
-        signature: callSignature,
-        signatureInput: callSignatureInput.toSignatureInputHeaderValue(),
-      },
-    },
-    publicKeyBytes,
-  });
 }
