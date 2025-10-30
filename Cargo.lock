@@ -2325,7 +2325,7 @@ dependencies = [
 [[package]]
 name = "ic-http-gateway"
 version = "0.3.0"
-source = "git+https://github.com/ilbertt/http-gateway#9c70d2a2acde18fa0d7530f2a42c1d0e78668ded"
+source = "git+https://github.com/ilbertt/http-gateway#a22c3537cc44d664ff6c8f4f76e88dc9b734ddc4"
 dependencies = [
  "base64 0.22.1",
  "bhttp",

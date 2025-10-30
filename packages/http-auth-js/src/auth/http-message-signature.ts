@@ -13,6 +13,10 @@ const SIGNATURE_INPUT_HEADER_NAME = 'signature-input';
 const SIGNATURE_KEY_HEADER_NAME = 'signature-key';
 const IC_INCLUDE_HEADERS_NAME = 'x-ic-include-headers';
 
+const IC_INCLUDE_HEADERS_SEPARATOR = ',';
+const SIGNATURE_INPUT_SEPARATOR = ';';
+const SIGNATURE_INPUT_KEY_VALUE_SEPARATOR = '=';
+
 const NANOSECONDS_PER_MILLISECOND = BigInt(1_000_000);
 
 const IC_REQUEST_DOMAIN_SEPARATOR = new TextEncoder().encode('\x0Aic-request');
@@ -44,7 +48,7 @@ function addIcIncludeHeadersToRequest(req: Request): void {
   req.headers.forEach((_value, key) => {
     headerNames.push(key);
   });
-  const icIncludeHeaders = headerNames.join(';');
+  const icIncludeHeaders = headerNames.join(IC_INCLUDE_HEADERS_SEPARATOR);
   req.headers.set(IC_INCLUDE_HEADERS_NAME, icIncludeHeaders);
 }
 
@@ -122,6 +126,10 @@ async function signRequestMap(requestMap: RequestMap, privateKey: CryptoKey): Pr
   return signature;
 }
 
+function signatureInputKeyValuePair(key: string, value: string): string {
+  return `${key}${SIGNATURE_INPUT_KEY_VALUE_SEPARATOR}${value}`;
+}
+
 /**
  * Creates the Signature-Input header value from the request map.
  * Includes all fields except 'arg'.
@@ -131,17 +139,17 @@ function createSignatureInput(requestMap: RequestMap): string {
     .filter(([key]) => key !== 'arg')
     .map(([key, value]) => {
       if (value instanceof Principal) {
-        return `${key}=${value.toText()}`;
+        return signatureInputKeyValuePair(key, value.toText());
       }
       if (value instanceof Uint8Array) {
-        return `${key}=${base64Encode(value)}`;
+        return signatureInputKeyValuePair(key, base64Encode(value));
       }
       if (typeof value === 'bigint') {
-        return `${key}=${value.toString()}`;
+        return signatureInputKeyValuePair(key, value.toString());
       }
-      return `${key}=${value}`;
+      return signatureInputKeyValuePair(key, value);
     })
-    .join(';');
+    .join(SIGNATURE_INPUT_SEPARATOR);
 }
 
 type SetAuthenticationHeadersParams = {
