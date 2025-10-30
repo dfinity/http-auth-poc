@@ -4,9 +4,9 @@ import { concatBytes } from '@noble/hashes/utils';
 import { base64Encode } from './base64';
 import { generateNonce } from './crypto';
 import { hashOfMap } from './representation-independent-hash';
+import { CallSignatureInput, type SignatureInput } from './signature-input';
 
 const DEFAULT_EXPIRATION_TIME_MS = 5 * 60 * 1_000; // 5 minutes
-const DEFAULT_SIG_NAME = 'sig';
 
 const SIGNATURE_HEADER_NAME = 'signature';
 const SIGNATURE_INPUT_HEADER_NAME = 'signature-input';
@@ -14,8 +14,10 @@ const SIGNATURE_KEY_HEADER_NAME = 'signature-key';
 const IC_INCLUDE_HEADERS_NAME = 'x-ic-include-headers';
 
 const IC_INCLUDE_HEADERS_SEPARATOR = ',';
-const SIGNATURE_INPUT_SEPARATOR = ';';
-const SIGNATURE_INPUT_KEY_VALUE_SEPARATOR = '=';
+
+const SIGNATURE_NAME_CALL = 'sig_call';
+const SIGNATURE_NAME_READ_STATE = 'sig_read_state';
+const SIGNATURE_NAME_QUERY = 'sig_query';
 
 const NANOSECONDS_PER_MILLISECOND = BigInt(1_000_000);
 
@@ -27,16 +29,6 @@ export type HttpMessageSignatureRequestParams = {
   expirationTimeMs?: number;
   sigName?: string;
   nonce?: Uint8Array;
-};
-
-type RequestMap = {
-  request_type: string;
-  canister_id: Principal;
-  method_name: string;
-  ingress_expiry: bigint;
-  sender: Principal;
-  nonce: Uint8Array;
-  arg: Uint8Array;
 };
 
 /**
@@ -82,37 +74,15 @@ function calculateIngressExpiry(expirationTimeMs: number): bigint {
 }
 
 /**
- * Builds the request map containing all fields needed for signing.
- */
-function buildRequestMap(params: {
-  canisterId: string;
-  publicKeyBytes: Uint8Array;
-  nonce: Uint8Array;
-  ingressExpiry: bigint;
-  arg: Uint8Array;
-}): RequestMap {
-  const canisterIdPrincipal = Principal.fromText(params.canisterId);
-  const senderPrincipal = Principal.selfAuthenticating(params.publicKeyBytes);
-
-  console.log('sender principal:', senderPrincipal.toText());
-
-  return {
-    request_type: 'call',
-    canister_id: canisterIdPrincipal,
-    method_name: 'http_request_update',
-    ingress_expiry: params.ingressExpiry,
-    sender: senderPrincipal,
-    nonce: params.nonce,
-    arg: params.arg,
-  };
-}
-
-/**
  * Signs the request map using the private key.
  * Returns the signature as an ArrayBuffer.
  */
-async function signRequestMap(requestMap: RequestMap, privateKey: CryptoKey): Promise<ArrayBuffer> {
-  const mapHash = hashOfMap(requestMap);
+async function signSignatureInput(
+  input: SignatureInput,
+  privateKey: CryptoKey,
+): Promise<ArrayBuffer> {
+  const map = input.toMap();
+  const mapHash = hashOfMap(map);
 
   const signature = await crypto.subtle.sign(
     {
@@ -126,37 +96,25 @@ async function signRequestMap(requestMap: RequestMap, privateKey: CryptoKey): Pr
   return signature;
 }
 
-function signatureInputKeyValuePair(key: string, value: string): string {
-  return `${key}${SIGNATURE_INPUT_KEY_VALUE_SEPARATOR}${value}`;
-}
-
-/**
- * Creates the Signature-Input header value from the request map.
- * Includes all fields except 'arg'.
- */
-function createSignatureInput(requestMap: RequestMap): string {
-  return Object.entries(requestMap)
-    .filter(([key]) => key !== 'arg')
-    .map(([key, value]) => {
-      if (value instanceof Principal) {
-        return signatureInputKeyValuePair(key, value.toText());
-      }
-      if (value instanceof Uint8Array) {
-        return signatureInputKeyValuePair(key, base64Encode(value));
-      }
-      if (typeof value === 'bigint') {
-        return signatureInputKeyValuePair(key, value.toString());
-      }
-      return signatureInputKeyValuePair(key, value);
-    })
-    .join(SIGNATURE_INPUT_SEPARATOR);
-}
-
 type SetAuthenticationHeadersParams = {
-  signature: ArrayBuffer;
+  signatures:
+    | {
+        call: {
+          signature: ArrayBuffer;
+          signatureInput: string;
+        };
+        readState?: {
+          signature: ArrayBuffer;
+          signatureInput: string;
+        };
+      }
+    | {
+        query: {
+          signature: ArrayBuffer;
+          signatureInput: string;
+        };
+      };
   publicKeyBytes: Uint8Array;
-  requestMap: RequestMap;
-  signatureName: string;
 };
 
 type SignatureKeyHeader = {
@@ -168,23 +126,41 @@ type SignatureKeyHeader = {
  */
 function setAuthenticationHeaders(
   req: Request,
-  { signature, publicKeyBytes, requestMap, signatureName }: SetAuthenticationHeadersParams,
+  { signatures, publicKeyBytes }: SetAuthenticationHeadersParams,
 ): void {
-  const encodedSignature = base64Encode(signature);
-  const encodedPublicKey = base64Encode(publicKeyBytes);
-
-  const signatureInput = createSignatureInput(requestMap);
+  let signatureHeaderValue = '';
+  let signatureInputHeaderValue = '';
+  let signatureKeyHeaderValue = '';
 
   // Create Signature-Key header (without delegation chain for now)
+  const encodedPublicKey = base64Encode(publicKeyBytes);
   const sigKeyHeader: SignatureKeyHeader = {
     pubKey: encodedPublicKey,
   };
   const encodedSigKeyHeader = base64Encode(JSON.stringify(sigKeyHeader));
 
+  if ('call' in signatures) {
+    signatureHeaderValue += `${SIGNATURE_NAME_CALL}=:${base64Encode(signatures.call.signature)}:`;
+    signatureInputHeaderValue += `${SIGNATURE_NAME_CALL}=${signatures.call.signatureInput}`;
+    signatureKeyHeaderValue += `${SIGNATURE_NAME_CALL}=:${encodedSigKeyHeader}:`;
+
+    if (signatures.readState) {
+      signatureHeaderValue += `${SIGNATURE_NAME_READ_STATE}=:${base64Encode(signatures.readState.signature)}:`;
+      signatureInputHeaderValue += `${SIGNATURE_NAME_READ_STATE}=${signatures.readState.signatureInput}`;
+      signatureKeyHeaderValue += `${SIGNATURE_NAME_READ_STATE}=:${encodedSigKeyHeader}:`;
+    }
+  } else if ('query' in signatures) {
+    signatureHeaderValue += `${SIGNATURE_NAME_QUERY}=:${base64Encode(signatures.query.signature)}:`;
+    signatureInputHeaderValue += `${SIGNATURE_NAME_QUERY}=${signatures.query.signatureInput}`;
+    signatureKeyHeaderValue += `${SIGNATURE_NAME_QUERY}=:${encodedSigKeyHeader}:`;
+  } else {
+    throw new Error('Invalid signatures');
+  }
+
   // Set all authentication headers
-  req.headers.set(SIGNATURE_HEADER_NAME, `${signatureName}=:${encodedSignature}:`);
-  req.headers.set(SIGNATURE_INPUT_HEADER_NAME, `${signatureName}=${signatureInput}`);
-  req.headers.set(SIGNATURE_KEY_HEADER_NAME, `${signatureName}=:${encodedSigKeyHeader}:`);
+  req.headers.set(SIGNATURE_HEADER_NAME, signatureHeaderValue);
+  req.headers.set(SIGNATURE_INPUT_HEADER_NAME, signatureInputHeaderValue);
+  req.headers.set(SIGNATURE_KEY_HEADER_NAME, signatureKeyHeaderValue);
 }
 
 /**
@@ -201,7 +177,6 @@ export async function addHttpMessageSignatureToRequest(
     canisterId,
     keyPair,
     expirationTimeMs = DEFAULT_EXPIRATION_TIME_MS,
-    sigName = DEFAULT_SIG_NAME,
     nonce,
   }: HttpMessageSignatureRequestParams,
 ): Promise<void> {
@@ -212,20 +187,22 @@ export async function addHttpMessageSignatureToRequest(
   const nonceBytes = nonce || generateNonce();
   const ingressExpiry = calculateIngressExpiry(expirationTimeMs);
 
-  const requestMap = buildRequestMap({
-    canisterId,
-    publicKeyBytes,
-    nonce: nonceBytes,
+  const callSignatureInput = new CallSignatureInput(
+    Principal.fromText(canisterId),
+    Principal.selfAuthenticating(publicKeyBytes),
+    nonceBytes,
     ingressExpiry,
     arg,
-  });
-
-  const signature = await signRequestMap(requestMap, keyPair.privateKey);
+  );
+  const callSignature = await signSignatureInput(callSignatureInput, keyPair.privateKey);
 
   setAuthenticationHeaders(req, {
-    signature,
+    signatures: {
+      call: {
+        signature: callSignature,
+        signatureInput: callSignatureInput.toSignatureInputHeaderValue(),
+      },
+    },
     publicKeyBytes,
-    requestMap,
-    signatureName: sigName,
   });
 }
