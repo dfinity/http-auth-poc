@@ -187,12 +187,12 @@ function setAuthenticationHeaders(
   };
 
   if ('call' in signatures) {
-    signatureHeaderValue = setSignatureHeaderValue(SignatureName.Call, signatures.call.signature);
-    signatureInputHeaderValue = setSignatureInputHeaderValue(
+    signatureHeaderValue = getSignatureHeaderValue(SignatureName.Call, signatures.call.signature);
+    signatureInputHeaderValue = getSignatureInputHeaderValue(
       SignatureName.Call,
       signatures.call.signatureInput,
     );
-    signatureKeyHeaderValue = setSignatureKeyHeaderValue(SignatureName.Call, sigKeyHeader);
+    signatureKeyHeaderValue = getSignatureKeyHeaderValue(SignatureName.Call, sigKeyHeader);
 
     if (signatures.readState) {
       signatureHeaderValue = appendToSignatureHeaderValue(
@@ -212,12 +212,12 @@ function setAuthenticationHeaders(
       );
     }
   } else if ('query' in signatures) {
-    signatureHeaderValue = setSignatureHeaderValue(SignatureName.Query, signatures.query.signature);
-    signatureInputHeaderValue = setSignatureInputHeaderValue(
+    signatureHeaderValue = getSignatureHeaderValue(SignatureName.Query, signatures.query.signature);
+    signatureInputHeaderValue = getSignatureInputHeaderValue(
       SignatureName.Query,
       signatures.query.signatureInput,
     );
-    signatureKeyHeaderValue = setSignatureKeyHeaderValue(SignatureName.Query, sigKeyHeader);
+    signatureKeyHeaderValue = getSignatureKeyHeaderValue(SignatureName.Query, sigKeyHeader);
   } else {
     throw new Error('Invalid signatures');
   }
@@ -228,7 +228,7 @@ function setAuthenticationHeaders(
   req.headers.set(SIGNATURE_KEY_HEADER_NAME, signatureKeyHeaderValue);
 }
 
-function setSignatureHeaderValue(signatureName: SignatureName, signature: ArrayBuffer): string {
+function getSignatureHeaderValue(signatureName: SignatureName, signature: ArrayBuffer): string {
   return `${signatureName}=:${base64Encode(signature)}:`;
 }
 
@@ -237,11 +237,11 @@ function appendToSignatureHeaderValue(
   signatureName: SignatureName,
   signature: ArrayBuffer,
 ): string {
-  const signatureValue = setSignatureHeaderValue(signatureName, signature);
+  const signatureValue = getSignatureHeaderValue(signatureName, signature);
   return [previousSignatureHeaderValue, signatureValue].join(SIGNATURES_SEPARATOR);
 }
 
-function setSignatureInputHeaderValue(
+function getSignatureInputHeaderValue(
   signatureName: SignatureName,
   signatureInput: string,
 ): string {
@@ -253,11 +253,11 @@ function appendToSignatureInputHeaderValue(
   signatureName: SignatureName,
   signatureInput: string,
 ): string {
-  const signatureInputValue = setSignatureInputHeaderValue(signatureName, signatureInput);
+  const signatureInputValue = getSignatureInputHeaderValue(signatureName, signatureInput);
   return [previousSignatureInputHeaderValue, signatureInputValue].join(SIGNATURES_SEPARATOR);
 }
 
-function setSignatureKeyHeaderValue(
+function getSignatureKeyHeaderValue(
   signatureName: SignatureName,
   signatureKey: SignatureKeyHeader,
 ): string {
@@ -270,6 +270,6 @@ function appendToSignatureKeyHeaderValue(
   signatureName: SignatureName,
   signatureKey: SignatureKeyHeader,
 ): string {
-  const signatureKeyValue = setSignatureKeyHeaderValue(signatureName, signatureKey);
+  const signatureKeyValue = getSignatureKeyHeaderValue(signatureName, signatureKey);
   return [previousSignatureKeyHeaderValue, signatureKeyValue].join(SIGNATURES_SEPARATOR);
 }
