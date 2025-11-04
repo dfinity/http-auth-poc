@@ -9,7 +9,7 @@ const DEFAULT_EXPIRATION_TIME_MS = 5 * 60 * 1_000; // 5 minutes
 const SIGNATURE_HEADER_NAME = 'signature';
 const SIGNATURE_INPUT_HEADER_NAME = 'signature-input';
 const SIGNATURE_KEY_HEADER_NAME = 'signature-key';
-const IC_INCLUDE_HEADERS_NAME = 'x-ic-include-headers';
+const IC_INCLUDE_HEADERS_NAME = 'ic-include-headers';
 
 const SIGNATURES_SEPARATOR = ',';
 const IC_INCLUDE_HEADERS_SEPARATOR = ',';
