@@ -36,8 +36,8 @@ enum RequestType {
 }
 
 enum MethodName {
-  HttpRequest = 'http_request',
-  HttpRequestUpdate = 'http_request_update',
+  HttpRequest = 'http_request_v2',
+  HttpRequestUpdate = 'http_request_update_v2',
 }
 
 export abstract class SignatureInput<T extends CommonRequestMap> {

@@ -24,7 +24,7 @@ fn post_upgrade() {
 }
 
 #[query(decode_with = "http::decode_args", encode_with = "http::encode_result")]
-fn http_request(req: HttpRequest) -> HttpResponse<'static> {
+fn http_request_v2(req: HttpRequest) -> HttpResponse<'static> {
     let path = req.get_path().expect("Failed to parse request path");
 
     if path.starts_with("/api") {
@@ -36,7 +36,7 @@ fn http_request(req: HttpRequest) -> HttpResponse<'static> {
 }
 
 #[update(decode_with = "http::decode_args", encode_with = "http::encode_result")]
-fn http_request_update(req: HttpRequest) -> HttpResponse<'static> {
+fn http_request_update_v2(req: HttpRequest) -> HttpResponse<'static> {
     let path = req.get_path().expect("Failed to parse request path");
 
     if path.starts_with("/api") {
