@@ -289,8 +289,7 @@ const App: Component = () => {
       <main>
         <div class={styles.devNote}>
           <p>
-            💡 Developer Tip: Open your browser's dev tools to inspect the JSON payloads and HTTP
-            message signatures!
+            💡 Developer Tip: Open your browser's dev tools to inspect the JSON payloads and signatures in the HTTP request headers!
           </p>
         </div>
         <Switch>
@@ -561,6 +560,7 @@ const App: Component = () => {
                 </Switch>
               </Suspense>
 
+              {/*
               <div class={styles.logoutContainer}>
                 <button
                   type="button"
@@ -576,6 +576,7 @@ const App: Component = () => {
                   Logout
                 </button>
               </div>
+              */}
             </section>
           </Match>
           <Match when={!auth()}>
