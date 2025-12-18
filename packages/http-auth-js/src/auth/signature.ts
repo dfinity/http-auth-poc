@@ -9,10 +9,10 @@ const DEFAULT_EXPIRATION_TIME_MS = 5 * 60 * 1_000; // 5 minutes
 const SIGNATURE_HEADER_NAME = 'signature';
 const SIGNATURE_INPUT_HEADER_NAME = 'signature-input';
 const SIGNATURE_KEY_HEADER_NAME = 'signature-key';
-const IC_INCLUDE_HEADERS_NAME = 'ic-include-headers';
 
 const SIGNATURES_SEPARATOR = ',';
-const IC_INCLUDE_HEADERS_SEPARATOR = ',';
+const SIGNATURE_INPUTS_SEPARATOR = ';';
+const SIGNATURE_KEYS_SEPARATOR = ',';
 
 const NANOSECONDS_PER_MILLISECOND = BigInt(1_000_000);
 
@@ -42,14 +42,13 @@ export async function addSignatureToRequest(
     nonce,
   }: SignatureToRequestParams,
 ): Promise<void> {
-  addIcIncludeHeadersToRequest(req);
-
   const canisterIdPrincipal = Principal.fromText(canisterId);
   const publicKeyBytes = await exportPublicKeyBytes(keyPair.publicKey);
   const senderPrincipal = Principal.selfAuthenticating(publicKeyBytes);
   const nonceBytes = nonce || generateNonce();
   const ingressExpiry = calculateIngressExpiry(expirationTimeMs);
   const arg = await encodeRequestToBHttp(req);
+  const includeHeaders = getIncludeHeaders(req);
 
   const callSignatureInput = new CallSignatureInput(
     canisterIdPrincipal,
@@ -57,6 +56,7 @@ export async function addSignatureToRequest(
     nonceBytes,
     ingressExpiry,
     arg,
+    includeHeaders,
   );
   const callRequestId = callSignatureInput.toRequestId();
   const callSignature = await signSignatureInput(callRequestId, keyPair.privateKey);
@@ -88,16 +88,15 @@ export async function addSignatureToRequest(
 }
 
 /**
- * Adds IC-Include-Headers to the request before encoding.
+ * Gets the list of header names to include in the signature from the request.
  * This strengthens security by including it in the signed representation.
  */
-function addIcIncludeHeadersToRequest(req: Request): void {
-  const headerNames: string[] = [IC_INCLUDE_HEADERS_NAME];
+function getIncludeHeaders(req: Request): string[] {
+  const headerNames: string[] = [];
   req.headers.forEach((_value, key) => {
     headerNames.push(key);
   });
-  const icIncludeHeaders = headerNames.join(IC_INCLUDE_HEADERS_SEPARATOR);
-  req.headers.set(IC_INCLUDE_HEADERS_NAME, icIncludeHeaders);
+  return headerNames;
 }
 
 /**
@@ -245,7 +244,7 @@ function getSignatureInputHeaderValue(
   signatureName: SignatureName,
   signatureInput: string,
 ): string {
-  return `${signatureName}=${signatureInput}`;
+  return `${signatureName}=(${signatureInput})`;
 }
 
 function appendToSignatureInputHeaderValue(
@@ -254,7 +253,7 @@ function appendToSignatureInputHeaderValue(
   signatureInput: string,
 ): string {
   const signatureInputValue = getSignatureInputHeaderValue(signatureName, signatureInput);
-  return [previousSignatureInputHeaderValue, signatureInputValue].join(SIGNATURES_SEPARATOR);
+  return [previousSignatureInputHeaderValue, signatureInputValue].join(SIGNATURE_INPUTS_SEPARATOR);
 }
 
 function getSignatureKeyHeaderValue(
@@ -271,5 +270,5 @@ function appendToSignatureKeyHeaderValue(
   signatureKey: SignatureKeyHeader,
 ): string {
   const signatureKeyValue = getSignatureKeyHeaderValue(signatureName, signatureKey);
-  return [previousSignatureKeyHeaderValue, signatureKeyValue].join(SIGNATURES_SEPARATOR);
+  return [previousSignatureKeyHeaderValue, signatureKeyValue].join(SIGNATURE_KEYS_SEPARATOR);
 }

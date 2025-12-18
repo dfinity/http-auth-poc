@@ -40,6 +40,13 @@ enum MethodName {
   HttpRequestUpdate = 'http_request_update_v2',
 }
 
+abstract class SignatureInputIncludeHeaders {
+  /**
+   * The headers to include in the bHTTP representation of the request.
+   */
+  abstract include_headers: string[];
+}
+
 export abstract class SignatureInput<T extends CommonRequestMap> {
   public readonly request_type: RequestType;
   public readonly sender: Principal;
@@ -75,10 +82,14 @@ export abstract class SignatureInput<T extends CommonRequestMap> {
 /**
  * The map of a call request according to the IC Interface Specification: https://internetcomputer.org/docs/references/ic-interface-spec#http-call
  */
-export class CallSignatureInput extends SignatureInput<CallRequestMap> {
+export class CallSignatureInput
+  extends SignatureInput<CallRequestMap>
+  implements SignatureInputIncludeHeaders
+{
   public readonly canister_id: Principal;
   public readonly method_name = MethodName.HttpRequestUpdate;
   public readonly arg: Uint8Array;
+  public readonly include_headers: string[];
 
   constructor(
     canister_id: Principal,
@@ -86,10 +97,12 @@ export class CallSignatureInput extends SignatureInput<CallRequestMap> {
     nonce: Uint8Array | undefined,
     ingress_expiry: bigint,
     arg: Uint8Array,
+    include_headers: string[],
   ) {
     super(RequestType.Call, sender, nonce, ingress_expiry);
     this.canister_id = canister_id;
     this.arg = arg;
+    this.include_headers = include_headers;
   }
 
   public toMap(): CallRequestMap {
@@ -115,6 +128,7 @@ export class CallSignatureInput extends SignatureInput<CallRequestMap> {
       components.push(signatureInputNonce(this.nonce));
     }
     components.push(signatureInputIngressExpiry(this.ingress_expiry));
+    components.push(signatureInputIncludeHeaders(this.include_headers));
 
     // The arg component will be reconstructed by the HTTP Gateway from the HTTP Request it will receive from us.
     // Therefore, we don't include it in the signature input header value.
@@ -167,10 +181,14 @@ export class ReadStateSignatureInput extends SignatureInput<ReadStateRequestMap>
 /**
  * The map of a query request according to the IC Interface Specification: https://internetcomputer.org/docs/references/ic-interface-spec#http-query
  */
-export class QuerySignatureInput extends SignatureInput<QueryRequestMap> {
+export class QuerySignatureInput
+  extends SignatureInput<QueryRequestMap>
+  implements SignatureInputIncludeHeaders
+{
   public readonly canister_id: Principal;
   public readonly method_name = MethodName.HttpRequestUpdate;
   public readonly arg: Uint8Array;
+  public readonly include_headers: string[];
 
   constructor(
     canister_id: Principal,
@@ -178,10 +196,12 @@ export class QuerySignatureInput extends SignatureInput<QueryRequestMap> {
     nonce: Uint8Array | undefined,
     ingress_expiry: bigint,
     arg: Uint8Array,
+    include_headers: string[],
   ) {
     super(RequestType.Query, sender, nonce, ingress_expiry);
     this.canister_id = canister_id;
     this.arg = arg;
+    this.include_headers = include_headers;
   }
 
   public toMap(): QueryRequestMap {
@@ -207,6 +227,7 @@ export class QuerySignatureInput extends SignatureInput<QueryRequestMap> {
       components.push(signatureInputNonce(this.nonce));
     }
     components.push(signatureInputIngressExpiry(this.ingress_expiry));
+    components.push(signatureInputIncludeHeaders(this.include_headers));
 
     // The arg component will be reconstructed by the HTTP Gateway from the HTTP Request it will receive from us.
     // Therefore, we don't include it in the signature input header value.
@@ -237,6 +258,10 @@ function signatureInputPrincipal(key: string, principal: Principal): string {
 
 function signatureInputKeyValuePair(key: string, value: string): string {
   return `${key}${SIGNATURE_INPUT_KEY_VALUE_SEPARATOR}${value}`;
+}
+
+function signatureInputIncludeHeaders(include_headers: string[]): string {
+  return signatureInputKeyValuePair('include_headers', include_headers.join(','));
 }
 
 function pathsToStrings(paths: Array<Array<string | Uint8Array>>): string[] {
