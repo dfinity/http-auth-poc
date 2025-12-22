@@ -48,6 +48,6 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@dfinity/identity": "^2.4.1"
+    "@icp-sdk/core": "^5.0.0"
   }
 }

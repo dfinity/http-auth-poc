@@ -1,5 +1,5 @@
-import { AuthClient } from '@dfinity/auth-client';
-import type { DelegationChain, DelegationIdentity, ECDSAKeyIdentity } from '@dfinity/identity';
+import { AuthClient } from '@icp-sdk/auth/client';
+import type { DelegationChain, DelegationIdentity, ECDSAKeyIdentity } from '@icp-sdk/core/identity';
 import { addHttpMessageSignatureToRequest } from '@icp-sdk/http/auth';
 import {
   type Component,

@@ -1,4 +1,4 @@
-import type { DelegationChain } from '@dfinity/identity';
+import type { DelegationChain } from '@icp-sdk/core/identity';
 import { base64Encode } from './base64';
 import { generateNonce, sha256 } from './crypto';
 import { epoch, isNil, isNotNil } from './util';
