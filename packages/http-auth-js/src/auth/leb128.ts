@@ -1,4 +1,4 @@
-// Code adapted from https://github.com/dfinity/icp-js-core/blob/0bf4b1b5683bcb53dda3630715e35e78b111f361/packages/candid/src/utils/leb128.ts
+// Code adapted from https://github.com/dfinity/icp-js-core/blob/5e11ae098e9048ecdd243ddc080ca1cb908117b8/packages/core/src/candid/utils/leb128.ts
 
 import { PipeArrayBuffer as Pipe } from './buffer';
 
