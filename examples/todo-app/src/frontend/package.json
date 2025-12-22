@@ -6,8 +6,8 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@icp-sdk/auth": "^4.1.1",
-    "@icp-sdk/core": "^4.2.1",
+    "@icp-sdk/auth": "^5.0.0",
+    "@icp-sdk/core": "^5.0.0",
     "@icp-sdk/http": "workspace:*",
     "solid-js": "^1.9.6"
   },

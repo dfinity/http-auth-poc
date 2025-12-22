@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "@dajiaji/bhttp": "jsr:^0.3.6",
-    "@icp-sdk/core": "^4.2.1",
+    "@icp-sdk/core": "^5.0.0",
     "@noble/hashes": "^1.8.0"
   }
 }
