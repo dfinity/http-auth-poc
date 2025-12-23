@@ -3,10 +3,11 @@ use std::sync::Arc;
 use axum::{Router, body::Bytes, extract::Request};
 use clap::Parser;
 use http_body_util::Full;
+use ic_bn_lib_common::types::http::ConnInfo;
 use ic_gateway::{
     Cli,
     ic_bn_lib::{
-        http::{ConnInfo, HyperClientLeastLoaded, ReqwestClient, dns::Resolver},
+        http::{HyperClientLeastLoaded, ReqwestClient, dns::Resolver},
         ic_agent::agent::route_provider::RoundRobinRouteProvider,
         prometheus::Registry,
         reqwest::Url,
@@ -103,6 +104,7 @@ async fn create_http_gateway_router(
         shutdown_token,
         None, // No vector
         None, // No WAF layer
+        None, // No custom domain router
     )
     .await?;
 
