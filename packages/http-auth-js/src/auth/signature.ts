@@ -1,8 +1,10 @@
 import { BHttpEncoder } from '@dajiaji/bhttp';
+import type { DelegationChain } from '@icp-sdk/core/identity';
 import { Principal } from '@icp-sdk/core/principal';
 import { base64Encode } from './base64';
 import { generateNonce } from './crypto';
 import { CallSignatureInput, ReadStateSignatureInput } from './signature-input';
+import { isNotNil } from './util';
 
 const DEFAULT_EXPIRATION_TIME_MS = 5 * 60 * 1_000; // 5 minutes
 
@@ -25,6 +27,7 @@ enum SignatureName {
 export type SignatureToRequestParams = {
   canisterId: string;
   keyPair: CryptoKeyPair;
+  delegationChain?: DelegationChain;
   expirationTimeMs?: number;
   sigName?: string;
   nonce?: Uint8Array;
@@ -38,6 +41,7 @@ export async function addSignatureToRequest(
   {
     canisterId,
     keyPair,
+    delegationChain,
     expirationTimeMs = DEFAULT_EXPIRATION_TIME_MS,
     nonce,
   }: SignatureToRequestParams,
@@ -84,6 +88,7 @@ export async function addSignatureToRequest(
       },
     },
     publicKeyBytes,
+    delegationChain,
   });
 }
 
@@ -163,10 +168,26 @@ type SetAuthenticationHeadersParams = {
         query: SignatureParams;
       };
   publicKeyBytes: Uint8Array;
+  delegationChain?: DelegationChain;
+};
+
+type SignatureKeyHeaderDelegation = {
+  delegation: {
+    pubKey: string;
+    expiration: string;
+    targets?: string[] | null;
+  };
+  sig: string;
+};
+
+type SignatureKeyHeaderDelegationChain = {
+  pubKey: string;
+  delegations: SignatureKeyHeaderDelegation[];
 };
 
 type SignatureKeyHeader = {
   pubKey: string;
+  delegationChain?: SignatureKeyHeaderDelegationChain | null;
 };
 
 /**
@@ -174,7 +195,7 @@ type SignatureKeyHeader = {
  */
 function setAuthenticationHeaders(
   req: Request,
-  { signatures, publicKeyBytes }: SetAuthenticationHeadersParams,
+  { signatures, publicKeyBytes, delegationChain }: SetAuthenticationHeadersParams,
 ): void {
   let signatureHeaderValue = '';
   let signatureInputHeaderValue = '';
@@ -184,6 +205,18 @@ function setAuthenticationHeaders(
   const sigKeyHeader: SignatureKeyHeader = {
     pubKey: base64Encode(publicKeyBytes),
   };
+  if (isNotNil(delegationChain)) {
+    sigKeyHeader.delegationChain = {
+      pubKey: base64Encode(delegationChain.publicKey),
+      delegations: delegationChain.delegations.map(({ delegation, signature }) => ({
+        delegation: {
+          pubKey: base64Encode(delegation.pubkey),
+          expiration: delegation.expiration.toString(),
+        },
+        sig: base64Encode(signature),
+      })),
+    };
+  }
 
   if ('call' in signatures) {
     signatureHeaderValue = getSignatureHeaderValue(SignatureName.Call, signatures.call.signature);
