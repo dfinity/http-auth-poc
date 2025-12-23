@@ -1,7 +1,5 @@
+import { hashOfMap, IC_REQUEST_DOMAIN_SEPARATOR } from '@icp-sdk/core/agent';
 import { concatBytes } from '@noble/hashes/utils';
-import { hashOfMap } from './representation-independent-hash';
-
-const IC_REQUEST_DOMAIN_SEPARATOR = new TextEncoder().encode('\x0Aic-request');
 
 /**
  * Creates a request id according to the IC Interface Specification: https://internetcomputer.org/docs/references/ic-interface-spec#request-id
