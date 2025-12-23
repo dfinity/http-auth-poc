@@ -57,9 +57,5 @@ features = ["ecdsa", "jwk", "pkcs8"]
 [workspace.lints.rust]
 warnings = "deny"
 
-[patch.crates-io]
-# v0.3.3 breaks backwards compatibility, do not remove unless you want to deal with it.
-ic-management-canister-types = { git = "https://github.com/dfinity/cdk-rs", rev = "19fdcd4c928b71d010aa124e2bb7f874290edac9" }
-
 [patch."https://github.com/dfinity/http-gateway"]
 ic-http-gateway = { git = "https://github.com/ilbertt/http-gateway" }

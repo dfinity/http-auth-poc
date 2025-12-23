@@ -20,6 +20,9 @@ pub async fn start_pocket_ic(pic_path: &str) -> (PocketIc, Url) {
             sns: None,
             ii: Some(IcpFeaturesConfig::DefaultConfig),
             nns_ui: None,
+            bitcoin: None,
+            canister_migration: None,
+            dogecoin: None,
         })
         .build_async()
         .await;
