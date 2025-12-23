@@ -22,10 +22,32 @@ use tracing_subscriber::{
     Registry as TracingRegistry, layer::SubscriberExt, reload, util::SubscriberInitExt,
 };
 
+pub enum IcUrl {
+    Remote(Url),
+    PocketIc(Url),
+}
+
+impl IcUrl {
+    pub fn new_remote(url: Url) -> Self {
+        IcUrl::Remote(url)
+    }
+
+    pub fn new_pocket_ic(url: Url) -> Self {
+        IcUrl::PocketIc(url)
+    }
+
+    pub fn into_url(&self) -> &Url {
+        match self {
+            IcUrl::Remote(url) => url,
+            IcUrl::PocketIc(url) => url,
+        }
+    }
+}
+
 pub async fn start_gateway(
     listen_ip_addr: &str,
     listen_port: u16,
-    replica_url: &Url,
+    replica_url: &IcUrl,
     shutdown_token: CancellationToken,
 ) -> Result<
     (
@@ -36,7 +58,7 @@ pub async fn start_gateway(
 > {
     let listen_addr = format!("{listen_ip_addr}:{listen_port}");
 
-    let gateway_args = vec![
+    let mut gateway_args = vec![
         "",
         "--domain",
         "localhost",
@@ -44,12 +66,27 @@ pub async fn start_gateway(
         listen_ip_addr,
         "--domain-canister-id-from-query-params",
         "--domain-canister-id-from-referer",
-        "--ic-unsafe-root-key-fetch",
         "--listen-plain",
         &listen_addr,
     ];
-    let (router, tasks) =
-        create_http_gateway_router(gateway_args, replica_url, shutdown_token.clone()).await?;
+
+    match replica_url {
+        IcUrl::Remote(url) => {
+            gateway_args.push("--ic-use-discovery");
+            gateway_args.push("--ic-url");
+            gateway_args.push(url.as_str());
+        }
+        IcUrl::PocketIc(_) => {
+            gateway_args.push("--ic-unsafe-root-key-fetch");
+        }
+    }
+
+    let (router, tasks) = create_http_gateway_router(
+        gateway_args,
+        &replica_url.into_url(),
+        shutdown_token.clone(),
+    )
+    .await?;
 
     tasks.start();
 
