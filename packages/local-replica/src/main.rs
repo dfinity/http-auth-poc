@@ -6,7 +6,7 @@ use ic_gateway::ic_bn_lib::reqwest::Url;
 use tokio_util::sync::CancellationToken;
 
 use crate::{
-    gateway::{IcUrl, start_gateway},
+    gateway::{ReplicaUrl, start_gateway},
     pocket_ic::start_pocket_ic,
 };
 
@@ -20,7 +20,7 @@ const LOCAL_REPLICA_HTTP_LISTEN_PORT: u16 = 4943;
 #[command(name = "replica")]
 #[command(about = "Local replica server with HTTP gateway", long_about = None)]
 struct Args {
-    /// Replica URL to use (if set to https://icp-api.io, PocketIC server won't be started)
+    /// Replica URL to use (if set, the PocketIC server won't be started)
     #[arg(long, value_name = "URL")]
     replica_url: Option<String>,
 }
@@ -35,13 +35,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Use provided replica URL, don't start PocketIC
         let url = Url::parse(&url_str)?;
         println!("Using replica URL: {}", url_str);
-        (IcUrl::new_remote(url), None)
+        (ReplicaUrl::new_remote(url), None)
     } else {
         // Start PocketIC server if no replica URL is provided
         let pic_path = format!("{PACKAGE_DIR}/{POCKET_IC_SERVER_BIN_PATH}");
         let (pic, pic_url) = start_pocket_ic(&pic_path).await;
         println!("PocketIC Server URL: {}", pic_url);
-        (IcUrl::new_pocket_ic(pic_url), Some(pic))
+        (ReplicaUrl::new_pocket_ic(pic_url), Some(pic))
     };
 
     // Setup gateway
