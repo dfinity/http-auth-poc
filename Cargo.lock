@@ -609,29 +609,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ade8366b8bd5ba243f0a58f036cc0ca8a2f069cff1a2351ef1cac6b083e16fc0"
 
 [[package]]
-name = "canbench-rs"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2669351aae7fe4fe2208838b370484dd3310cc99648500edc384cca245a3fff"
-dependencies = [
- "canbench-rs-macros",
- "candid",
- "ic-cdk",
- "serde",
-]
-
-[[package]]
-name = "canbench-rs-macros"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "041885a6642bbc6096aba629814c0b15a96191e427986631d95105139702ca73"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "candid"
 version = "0.10.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1266,7 +1243,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5e6043086bf7973472e0c7dff2142ea0b680d30e18d9cc40f267efbf222bd47"
 dependencies = [
  "base16ct",
- "base64ct",
  "crypto-bigint",
  "digest 0.10.7",
  "ff",
@@ -1276,8 +1252,6 @@ dependencies = [
  "pkcs8",
  "rand_core 0.6.4",
  "sec1",
- "serde_json",
- "serdect",
  "subtle",
  "zeroize",
 ]
@@ -2037,10 +2011,10 @@ dependencies = [
  "http",
  "http-body",
  "http-body-util",
- "ic-certification 3.0.3",
+ "ic-certification",
  "ic-ed25519",
  "ic-transport-types 0.44.3",
- "ic-verify-bls-signature 0.5.0",
+ "ic-verify-bls-signature",
  "k256",
  "leb128",
  "p256",
@@ -2072,7 +2046,7 @@ checksum = "c43805022a5e4f408de44ca26396128697a2c39f83f4fdaf33f8aa3ac653d78e"
 dependencies = [
  "globset",
  "http",
- "ic-certification 3.0.3",
+ "ic-certification",
  "ic-http-certification",
  "thiserror 1.0.69",
 ]
@@ -2201,32 +2175,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "ic-canister-sig-creation"
-version = "1.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8b2a507d1bebb111fc8c76098468e4de9c745e9b9ef160a079568ae1d6f7fef"
-dependencies = [
- "candid",
- "hex",
- "ic-certification 3.0.3",
- "ic-representation-independent-hash",
- "ic0",
- "lazy_static",
- "serde",
- "serde_bytes",
- "serde_cbor",
- "sha2 0.10.9",
- "thiserror 2.0.17",
-]
-
-[[package]]
 name = "ic-cbor"
 version = "3.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0efada960a6c9fb023f45ed95801b757a033dafba071e4f386c6c112ca186d9"
 dependencies = [
  "candid",
- "ic-certification 3.0.3",
+ "ic-certification",
  "leb128",
  "nom 7.1.3",
  "thiserror 1.0.69",
@@ -2282,7 +2237,7 @@ dependencies = [
  "cached 0.54.0",
  "candid",
  "ic-cbor",
- "ic-certification 3.0.3",
+ "ic-certification",
  "lazy_static",
  "leb128",
  "miracl_core_bls12381",
@@ -2290,18 +2245,6 @@ dependencies = [
  "parking_lot",
  "sha2 0.10.9",
  "thiserror 1.0.69",
-]
-
-[[package]]
-name = "ic-certification"
-version = "2.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e64ee3d8b6e81b51f245716d3e0badb63c283c00f3c9fb5d5219afc30b5bf821"
-dependencies = [
- "hex",
- "serde",
- "serde_bytes",
- "sha2 0.10.9",
 ]
 
 [[package]]
@@ -2503,23 +2446,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "ic-http-auth"
+name = "ic-http"
 version = "0.0.0"
 dependencies = [
- "base64 0.22.1",
- "canbench-rs",
- "candid",
- "hex",
- "ic-canister-sig-creation",
- "ic-cdk",
+ "bhttp",
  "ic-http-certification",
- "ic-signature-verification",
- "nom 8.0.0",
- "p256",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -2531,7 +2462,7 @@ dependencies = [
  "base64 0.22.1",
  "candid",
  "http",
- "ic-certification 3.0.3",
+ "ic-certification",
  "ic-representation-independent-hash",
  "serde",
  "serde_cbor",
@@ -2617,7 +2548,7 @@ dependencies = [
  "http",
  "ic-cbor",
  "ic-certificate-verification",
- "ic-certification 3.0.3",
+ "ic-certification",
  "ic-http-certification",
  "ic-representation-independent-hash",
  "leb128",
@@ -2629,22 +2560,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ic-signature-verification"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9de5065430a9b1a61934f7e4a65474a7a11658db84a8b5b0c42baced6c33752"
-dependencies = [
- "ic-canister-sig-creation",
- "ic-certification 2.6.0",
- "ic-verify-bls-signature 0.6.0",
- "ic_principal",
- "serde",
- "serde_bytes",
- "serde_cbor",
- "sha2 0.10.9",
-]
-
-[[package]]
 name = "ic-transport-types"
 version = "0.40.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2652,7 +2567,7 @@ checksum = "a2e7706e55836e8104c98149ec0796d20d5213fef972ac01b544657d410f1883"
 dependencies = [
  "candid",
  "hex",
- "ic-certification 3.0.3",
+ "ic-certification",
  "leb128",
  "serde",
  "serde_bytes",
@@ -2670,7 +2585,7 @@ checksum = "d5fec6355d0a542bfe484eb36343b6570047394124918cb8b435e22241c65427"
 dependencies = [
  "candid",
  "hex",
- "ic-certification 3.0.3",
+ "ic-certification",
  "leb128",
  "serde",
  "serde_bytes",
@@ -2713,19 +2628,6 @@ dependencies = [
  "lazy_static",
  "pairing",
  "rand 0.8.5",
- "sha2 0.10.9",
-]
-
-[[package]]
-name = "ic-verify-bls-signature"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd6c4261586eb473fe1219de63186a98e554985d5fd6f3488036c8fb82452e27"
-dependencies = [
- "hex",
- "ic_bls12_381",
- "lazy_static",
- "pairing",
  "sha2 0.10.9",
 ]
 
@@ -3792,7 +3694,7 @@ dependencies = [
  "candid",
  "flate2",
  "hex",
- "ic-certification 3.0.3",
+ "ic-certification",
  "ic-management-canister-types 0.5.0",
  "ic-transport-types 0.40.1",
  "reqwest",
@@ -4571,7 +4473,6 @@ dependencies = [
  "der",
  "generic-array",
  "pkcs8",
- "serdect",
  "subtle",
  "zeroize",
 ]
@@ -4772,16 +4673,6 @@ dependencies = [
  "ryu",
  "serde",
  "unsafe-libyaml",
-]
-
-[[package]]
-name = "serdect"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a84f14a19e9a014bb9f4512488d9829a68e04ecabffb0f9904cd1ace94598177"
-dependencies = [
- "base16ct",
- "serde",
 ]
 
 [[package]]
@@ -5344,7 +5235,7 @@ dependencies = [
  "hex",
  "ic-asset-certification",
  "ic-cdk",
- "ic-http-auth",
+ "ic-http",
  "ic-http-certification",
  "include_dir",
  "matchit",

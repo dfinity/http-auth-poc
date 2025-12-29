@@ -1,0 +1,23 @@
+[package]
+name = "ic-http"
+description = "Canister side support for ICP HTTP Protocol"
+readme = "README.md"
+documentation = "https://docs.rs/ic-http"
+categories = ["api-bindings", "algorithms", "cryptography::cryptocurrencies"]
+keywords = ["internet-computer", "icp", "dfinity", "http", "authentication"]
+include = ["src", "Cargo.toml", "README.md"]
+
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+homepage.workspace = true
+
+[dependencies]
+ic-http-certification.workspace = true
+
+bhttp = "0.7.0"
+
+[lints]
+workspace = true
