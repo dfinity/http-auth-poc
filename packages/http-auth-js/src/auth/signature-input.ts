@@ -170,7 +170,7 @@ export class CallSignatureInput
  * The map of a read_state request according to the IC Interface Specification: https://internetcomputer.org/docs/references/ic-interface-spec#http-read-state
  */
 export class ReadStateSignatureInput extends SignatureInput<ReadStateRequestMap> {
-  public readonly paths: Array<Array<string | Uint8Array>>;
+  public readonly paths: Array<Array<Uint8Array>>;
 
   constructor(
     sender: Principal,
@@ -179,7 +179,7 @@ export class ReadStateSignatureInput extends SignatureInput<ReadStateRequestMap>
     paths: Array<Array<string | Uint8Array>>,
   ) {
     super(RequestType.ReadState, sender, nonce, ingress_expiry);
-    this.paths = paths;
+    this.paths = pathsToBytes(paths);
   }
 
   toMap(): ReadStateRequestMap {
@@ -188,7 +188,7 @@ export class ReadStateSignatureInput extends SignatureInput<ReadStateRequestMap>
       sender: this.sender,
       nonce: this.nonce,
       ingress_expiry: this.ingress_expiry,
-      paths: pathsToBytes(this.paths),
+      paths: this.paths,
     };
   }
 
@@ -197,7 +197,7 @@ export class ReadStateSignatureInput extends SignatureInput<ReadStateRequestMap>
       this.signatureInputRequestType(),
       this.signatureInputSender(),
       this.signatureInputIngressExpiry(),
-      this.signatureInputKeyValuePair('paths', pathsToStrings(this.paths).join(',')),
+      this.signatureInputKeyValuePair('paths', encodePaths(this.paths).join(',')),
       this.signatureInputNonce(),
     ];
 
@@ -261,10 +261,8 @@ export class QuerySignatureInput
   }
 }
 
-function pathsToStrings(paths: Array<Array<string | Uint8Array>>): string[] {
-  return paths.map((path) =>
-    path.map((p) => (typeof p === 'string' ? p : base64Encode(p))).join('/'),
-  );
+function encodePaths(paths: Array<Array<Uint8Array>>): string[] {
+  return paths.map((path) => path.map((p) => base64Encode(p)).join('/'));
 }
 
 function pathsToBytes(paths: Array<Array<string | Uint8Array>>): Uint8Array[][] {
