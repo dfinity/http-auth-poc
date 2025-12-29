@@ -105,7 +105,7 @@ export class CallSignatureInput
     this.include_headers = include_headers;
   }
 
-  public toMap(): CallRequestMap {
+  toMap(): CallRequestMap {
     return {
       request_type: this.request_type,
       canister_id: this.canister_id,
@@ -153,7 +153,7 @@ export class ReadStateSignatureInput extends SignatureInput<ReadStateRequestMap>
     this.paths = paths;
   }
 
-  public toMap(): ReadStateRequestMap {
+  toMap(): ReadStateRequestMap {
     return {
       request_type: this.request_type,
       sender: this.sender,
@@ -204,7 +204,7 @@ export class QuerySignatureInput
     this.include_headers = include_headers;
   }
 
-  public toMap(): QueryRequestMap {
+  toMap(): QueryRequestMap {
     return {
       request_type: this.request_type,
       canister_id: this.canister_id,
