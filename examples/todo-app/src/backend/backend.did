@@ -1,28 +1,3 @@
-type HeaderField = record { text; text };
+// We don't need a Candid declaration :)
 
-type HttpRequest = record {
-  method : text;
-  url : text;
-  headers : vec HeaderField;
-  body : blob;
-  certificate_version : opt nat16;
-};
-
-type HttpUpdateRequest = record {
-  method : text;
-  url : text;
-  headers : vec HeaderField;
-  body : blob;
-};
-
-type HttpResponse = record {
-  status_code : nat16;
-  headers : vec HeaderField;
-  body : blob;
-  upgrade : opt bool;
-};
-
-service : {
-  http_request : (request : HttpRequest) -> (HttpResponse) query;
-  http_request_update : (request : HttpUpdateRequest) -> (HttpResponse);
-};
+service : {}

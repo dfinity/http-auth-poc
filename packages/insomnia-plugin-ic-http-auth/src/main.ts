@@ -1,4 +1,4 @@
-import { getHttpMessageSignatureHeaders } from '@icp-sdk/http/auth';
+import { addSignatureToRequest } from '@icp-sdk/http/auth';
 import { exportKeyPair, generateKeyPair, importKeyPair, importKeyPairFromPem } from './crypto';
 import type { InsomniaContext, RequestHook } from './insomnia';
 
@@ -55,17 +55,19 @@ const requestHooks: RequestHook[] = [
     if (!canisterId) {
       throw new Error('Canister ID is not set');
     }
-    const signatureHeaders = await getHttpMessageSignatureHeaders(
-      { keyPair },
-      {
-        url: context.request.getUrl(),
-        method: context.request.getMethod(),
-        headers: new Headers(context.request.getHeaders().map(({ name, value }) => [name, value])),
-        body: context.request.getBody().text || '',
-        canisterId,
-      },
-    );
-    signatureHeaders.forEach(([headerName, headerValue]) => {
+
+    const req = new Request(context.request.getUrl(), {
+      method: context.request.getMethod(),
+      headers: new Headers(context.request.getHeaders().map(({ name, value }) => [name, value])),
+      body: context.request.getBody().text || '',
+    });
+
+    await addSignatureToRequest(req, {
+      keyPair,
+      canisterId,
+    });
+
+    req.headers.forEach(([headerName, headerValue]) => {
       context.request.setHeader(headerName, headerValue);
     });
   },

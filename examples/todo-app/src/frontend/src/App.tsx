@@ -1,6 +1,6 @@
 import { AuthClient } from '@icp-sdk/auth/client';
 import type { DelegationChain, DelegationIdentity, ECDSAKeyIdentity } from '@icp-sdk/core/identity';
-import { addHttpMessageSignatureToRequest } from '@icp-sdk/http/auth';
+import { addSignatureToRequest } from '@icp-sdk/http/auth';
 import {
   type Component,
   createEffect,
@@ -65,7 +65,7 @@ async function fetchTodos(auth: LoginResponse | undefined): Promise<{ todos: Tod
   }
 
   const req = new Request('/api/todos');
-  await addHttpMessageSignatureToRequest(req, {
+  await addSignatureToRequest(req, {
     keyPair: auth.keyPair,
     delegationChain: auth.delegationChain,
     canisterId: CANISTER_ID_TODO_APP_BACKEND,
@@ -86,7 +86,7 @@ async function fetchTodoById(
 
   try {
     const req = new Request(`/api/todos/${id}`);
-    await addHttpMessageSignatureToRequest(req, {
+    await addSignatureToRequest(req, {
       keyPair: auth.keyPair,
       delegationChain: auth.delegationChain,
       canisterId: CANISTER_ID_TODO_APP_BACKEND,
@@ -124,7 +124,7 @@ async function createTodo(
         title: title.trim(),
       }),
     });
-    await addHttpMessageSignatureToRequest(req, {
+    await addSignatureToRequest(req, {
       keyPair: auth.keyPair,
       delegationChain: auth.delegationChain,
       canisterId: CANISTER_ID_TODO_APP_BACKEND,
@@ -165,7 +165,7 @@ async function toggleTodoCompleted(
         completed: !completed,
       }),
     });
-    await addHttpMessageSignatureToRequest(req, {
+    await addSignatureToRequest(req, {
       keyPair: auth.keyPair,
       delegationChain: auth.delegationChain,
       canisterId: CANISTER_ID_TODO_APP_BACKEND,
@@ -195,7 +195,7 @@ async function deleteTodo(auth: LoginResponse | undefined, id: number): Promise<
     const req = new Request(`/api/todos/${id}`, {
       method: 'DELETE',
     });
-    await addHttpMessageSignatureToRequest(req, {
+    await addSignatureToRequest(req, {
       keyPair: auth.keyPair,
       delegationChain: auth.delegationChain,
       canisterId: CANISTER_ID_TODO_APP_BACKEND,
@@ -300,8 +300,7 @@ const App: Component = () => {
       <main>
         <div class={styles.devNote}>
           <p>
-            💡 Developer Tip: Open your browser's dev tools to inspect the JSON payloads and HTTP
-            message signatures!
+            💡 Developer Tip: Open your browser's dev tools to inspect the JSON payloads and signatures in the HTTP request headers!
           </p>
         </div>
         <Switch>
