@@ -1,9 +1,8 @@
 import type { Principal } from '@icp-sdk/core/principal';
 import { utf8ToBytes } from '@noble/hashes/utils';
 import { base64Encode } from './base64';
+import { generateNonce } from './crypto';
 import { toRequestId } from './request-id';
-
-const SIGNATURE_INPUT_KEY_VALUE_SEPARATOR = '=';
 
 export type CommonRequestMap = {
   request_type: string;
@@ -49,7 +48,7 @@ abstract class SignatureInputIncludeHeaders {
 export abstract class SignatureInput<T extends CommonRequestMap> {
   public readonly request_type: RequestType;
   public readonly sender: Principal;
-  public readonly nonce: Uint8Array | undefined;
+  public readonly nonce: Uint8Array;
   public readonly ingress_expiry: bigint;
 
   constructor(
@@ -60,11 +59,12 @@ export abstract class SignatureInput<T extends CommonRequestMap> {
   ) {
     this.request_type = request_type;
     this.sender = sender;
-    this.nonce = nonce;
+    this.nonce = nonce || generateNonce();
     this.ingress_expiry = ingress_expiry;
   }
 
   abstract toSignatureInputComponents(): string[];
+
   /**
    * Creates an object representation of the current input.
    */
@@ -75,6 +75,38 @@ export abstract class SignatureInput<T extends CommonRequestMap> {
    */
   toRequestId(): Uint8Array {
     return toRequestId(this.toMap());
+  }
+
+  signatureInputRequestType(): string {
+    return this.signatureInputKeyValuePair('request_type', this.request_type);
+  }
+
+  signatureInputCanisterId(canister_id: Principal): string {
+    return this.signatureInputKeyValuePair('canister_id', canister_id.toText());
+  }
+
+  signatureInputMethodName(method_name: MethodName): string {
+    return this.signatureInputKeyValuePair('method_name', method_name);
+  }
+
+  signatureInputSender(): string {
+    return this.signatureInputKeyValuePair('sender', this.sender.toText());
+  }
+
+  signatureInputNonce(): string {
+    return this.signatureInputKeyValuePair('nonce', base64Encode(this.nonce));
+  }
+
+  signatureInputIngressExpiry(): string {
+    return this.signatureInputKeyValuePair('ingress_expiry', this.ingress_expiry.toString());
+  }
+
+  signatureInputIncludeHeaders(include_headers: string[]): string {
+    return this.signatureInputKeyValuePair('include_headers', include_headers.join(','));
+  }
+
+  signatureInputKeyValuePair(key: string, value: string): string {
+    return `${key}=${value}`;
   }
 }
 
@@ -118,13 +150,13 @@ export class CallSignatureInput
 
   public toSignatureInputComponents() {
     const components: string[] = [
-      signatureInputRequestType(this.request_type),
-      signatureInputPrincipal('canister_id', this.canister_id),
-      signatureInputKeyValuePair('method_name', this.method_name),
-      signatureInputSender(this.sender),
-      signatureInputIngressExpiry(this.ingress_expiry),
-      signatureInputIncludeHeaders(this.include_headers),
-      ...(this.nonce ? [signatureInputNonce(this.nonce)] : []),
+      this.signatureInputRequestType(),
+      this.signatureInputCanisterId(this.canister_id),
+      this.signatureInputMethodName(this.method_name),
+      this.signatureInputSender(),
+      this.signatureInputIngressExpiry(),
+      this.signatureInputIncludeHeaders(this.include_headers),
+      this.signatureInputNonce(),
     ];
 
     // The arg component will be reconstructed by the HTTP Gateway from the HTTP Request it will receive from us.
@@ -162,11 +194,11 @@ export class ReadStateSignatureInput extends SignatureInput<ReadStateRequestMap>
 
   public toSignatureInputComponents() {
     const components: string[] = [
-      signatureInputRequestType(this.request_type),
-      signatureInputSender(this.sender),
-      signatureInputIngressExpiry(this.ingress_expiry),
-      signatureInputKeyValuePair('paths', pathsToStrings(this.paths).join(',')),
-      ...(this.nonce ? [signatureInputNonce(this.nonce)] : []),
+      this.signatureInputRequestType(),
+      this.signatureInputSender(),
+      this.signatureInputIngressExpiry(),
+      this.signatureInputKeyValuePair('paths', pathsToStrings(this.paths).join(',')),
+      this.signatureInputNonce(),
     ];
 
     return components;
@@ -213,13 +245,13 @@ export class QuerySignatureInput
 
   public toSignatureInputComponents() {
     const components: string[] = [
-      signatureInputRequestType(this.request_type),
-      signatureInputPrincipal('canister_id', this.canister_id),
-      signatureInputKeyValuePair('method_name', this.method_name),
-      signatureInputSender(this.sender),
-      signatureInputIngressExpiry(this.ingress_expiry),
-      signatureInputIncludeHeaders(this.include_headers),
-      ...(this.nonce ? [signatureInputNonce(this.nonce)] : []),
+      this.signatureInputRequestType(),
+      this.signatureInputCanisterId(this.canister_id),
+      this.signatureInputMethodName(this.method_name),
+      this.signatureInputSender(),
+      this.signatureInputIngressExpiry(),
+      this.signatureInputIncludeHeaders(this.include_headers),
+      this.signatureInputNonce(),
     ];
 
     // The arg component will be reconstructed by the HTTP Gateway from the HTTP Request it will receive from us.
@@ -227,34 +259,6 @@ export class QuerySignatureInput
 
     return components;
   }
-}
-
-function signatureInputRequestType(request_type: RequestType): string {
-  return signatureInputKeyValuePair('request_type', request_type);
-}
-
-function signatureInputSender(sender: Principal): string {
-  return signatureInputPrincipal('sender', sender);
-}
-
-function signatureInputNonce(nonce: Uint8Array): string {
-  return signatureInputKeyValuePair('nonce', base64Encode(nonce));
-}
-
-function signatureInputIngressExpiry(ingress_expiry: bigint): string {
-  return signatureInputKeyValuePair('ingress_expiry', ingress_expiry.toString());
-}
-
-function signatureInputPrincipal(key: string, principal: Principal): string {
-  return signatureInputKeyValuePair(key, principal.toText());
-}
-
-function signatureInputKeyValuePair(key: string, value: string): string {
-  return `${key}${SIGNATURE_INPUT_KEY_VALUE_SEPARATOR}${value}`;
-}
-
-function signatureInputIncludeHeaders(include_headers: string[]): string {
-  return signatureInputKeyValuePair('include_headers', include_headers.join(','));
 }
 
 function pathsToStrings(paths: Array<Array<string | Uint8Array>>): string[] {
