@@ -12,7 +12,7 @@ candid.workspace = true
 ic-cdk.workspace = true
 ic-http-certification.workspace = true
 ic-asset-certification.workspace = true
-ic-http-auth.workspace = true
+ic-http.workspace = true
 
 include_dir.workspace = true
 hex.workspace = true

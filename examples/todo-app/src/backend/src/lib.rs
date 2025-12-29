@@ -1,6 +1,5 @@
 mod api;
 mod assets;
-mod http;
 mod router;
 mod todo;
 
@@ -23,7 +22,10 @@ fn post_upgrade() {
     certify_all_assets();
 }
 
-#[query(decode_with = "http::decode_args", encode_with = "http::encode_result")]
+#[query(
+    decode_with = "ic_http::decode_args",
+    encode_with = "ic_http::encode_result"
+)]
 fn http_request_v2(req: HttpRequest) -> HttpResponse<'static> {
     let path = req.get_path().expect("Failed to parse request path");
 
@@ -35,7 +37,10 @@ fn http_request_v2(req: HttpRequest) -> HttpResponse<'static> {
     serve_asset(&req)
 }
 
-#[update(decode_with = "http::decode_args", encode_with = "http::encode_result")]
+#[update(
+    decode_with = "ic_http::decode_args",
+    encode_with = "ic_http::encode_result"
+)]
 fn http_request_update_v2(req: HttpRequest) -> HttpResponse<'static> {
     let path = req.get_path().expect("Failed to parse request path");
 

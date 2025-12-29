@@ -4,7 +4,7 @@ use super::todo_types::{
     UpdateTodoItemResponse,
 };
 use crate::api::json_decode;
-use ic_cdk::{api::msg_caller, println};
+use ic_cdk::api::msg_caller;
 use ic_http_certification::{HttpRequest, HttpResponse};
 use matchit::Params;
 use once_cell::sync::OnceCell;
@@ -26,10 +26,10 @@ fn todos() -> &'static Mutex<UserTodoMap> {
 }
 
 pub fn get_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpResponse<'static> {
-    println!("[get_todo_item_handler] Processing request: {:?}", req);
-    let caller = msg_caller();
+    ic_cdk::println!("[get_todo_item_handler] Processing request: {:?}", req);
+    let user_principal = msg_caller();
 
-    println!("[get_todo_item_handler] User principal: {}", caller);
+    ic_cdk::println!("[get_todo_item_handler] User principal: {}", user_principal);
 
     let Some(id_str) = params.get("id") else {
         ic_cdk::println!("[get_todo_item_handler] Missing ID parameter");
@@ -39,7 +39,7 @@ pub fn get_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpResponse
         ic_cdk::println!("[get_todo_item_handler] Invalid ID format: {}", id_str);
         return HttpResponse::bad_request(b"Invalid ID format", vec![]).build();
     };
-    let user_id = caller.to_text();
+    let user_id = user_principal.to_text();
 
     let all_todos = todos().lock().unwrap();
 
@@ -56,12 +56,12 @@ pub fn get_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpResponse
 }
 
 pub fn list_todo_items_handler(_req: &HttpRequest, _params: &Params) -> HttpResponse<'static> {
-    let caller = msg_caller();
+    let user_principal = msg_caller();
 
     let mut all_todos = todos().lock().unwrap();
 
     let user_todos = all_todos
-        .entry(caller.to_text())
+        .entry(user_principal.to_text())
         .or_default()
         .values()
         .cloned()
@@ -69,15 +69,15 @@ pub fn list_todo_items_handler(_req: &HttpRequest, _params: &Params) -> HttpResp
 
     let data = ListTodosResponseBody {
         todos: user_todos,
-        user_principal: caller,
+        user_principal,
     };
 
     ListTodosResponse::ok(data)
 }
 
 pub fn create_todo_item_handler(req: &HttpRequest, _params: &Params) -> HttpResponse<'static> {
-    println!("[create_todo_item_handler] Processing request: {:?}", req);
-    let caller = msg_caller();
+    ic_cdk::println!("[create_todo_item_handler] Processing request: {:?}", req);
+    let user_principal = msg_caller();
 
     let req_body: CreateTodoItemRequest = json_decode(req.body());
 
@@ -94,7 +94,7 @@ pub fn create_todo_item_handler(req: &HttpRequest, _params: &Params) -> HttpResp
     };
     let mut all_todos = todos().lock().unwrap();
     all_todos
-        .entry(caller.to_text())
+        .entry(user_principal.to_text())
         .or_default()
         .insert(id, todo_item.clone());
 
@@ -110,10 +110,10 @@ pub fn update_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpRespo
     );
     ic_cdk::println!("[update_todo_item_handler] All Params: {:?}", params);
 
-    let caller = msg_caller();
+    let user_principal = msg_caller();
     ic_cdk::println!(
         "[update_todo_item_handler] User principal: {}",
-        caller.to_text()
+        user_principal.to_text()
     );
 
     // Parse the request body
@@ -148,12 +148,12 @@ pub fn update_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpRespo
     ic_cdk::println!("[update_todo_item_handler] Todo ID: {}", id);
 
     let mut all_todos = todos().lock().unwrap();
-    let user_todos = all_todos.get_mut(&caller.to_text());
+    let user_todos = all_todos.get_mut(&user_principal.to_text());
 
     if user_todos.is_none() {
         ic_cdk::println!(
             "[update_todo_item_handler] No todos found for user: {}",
-            caller.to_text()
+            user_principal.to_text()
         );
         return HttpResponse::not_found(b"Todo item not found", vec![]).build();
     }
@@ -187,13 +187,13 @@ pub fn delete_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpRespo
     );
     ic_cdk::println!("[delete_todo_item_handler] All Params: {:?}", params);
 
-    let caller = msg_caller();
+    let user_principal = msg_caller();
 
     let id: u32 = params.get("id").unwrap().parse().unwrap();
 
     let mut all_todos = todos().lock().unwrap();
     all_todos
-        .get_mut(&caller.to_text())
+        .get_mut(&user_principal.to_text())
         .and_then(|todos| todos.remove(&id));
 
     DeleteTodoItemResponse::ok(())
