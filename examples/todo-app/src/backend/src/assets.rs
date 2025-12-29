@@ -6,7 +6,7 @@ use ic_cdk::api::{canister_cycle_balance, certified_data_set, data_certificate};
 use ic_http_certification::{
     CERTIFICATE_EXPRESSION_HEADER_NAME, DefaultCelBuilder, HeaderField, HttpCertification,
     HttpCertificationPath, HttpCertificationTree, HttpCertificationTreeEntry, HttpRequest,
-    HttpResponse, StatusCode,
+    HttpResponse, StatusCode, utils::add_v2_certificate_header,
 };
 use include_dir::{Dir, include_dir};
 use matchit::Params;
@@ -146,13 +146,28 @@ pub fn serve_metrics(_req: &HttpRequest, _params: &Params) -> HttpResponse<'stat
                 NO_CACHE_ASSET_CACHE_CONTROL.to_string(),
             ),
         ]);
-        let response = HttpResponse::builder()
+        let mut response = HttpResponse::builder()
             .with_status_code(StatusCode::OK)
             .with_body(body)
             .with_headers(headers)
             .build();
 
-        response
+        HTTP_TREE.with(|tree| {
+            let tree = tree.borrow();
+
+            let metrics_tree_path = HttpCertificationPath::exact("/metrics");
+            let metrics_certification = HttpCertification::skip();
+            let metrics_tree_entry =
+                HttpCertificationTreeEntry::new(&metrics_tree_path, metrics_certification);
+            add_v2_certificate_header(
+                &data_certificate().expect("No data certificate available"),
+                &mut response,
+                &tree.witness(&metrics_tree_entry, "/metrics").unwrap(),
+                &metrics_tree_path.to_expr_path(),
+            );
+
+            response
+        })
     })
 }
 
