@@ -118,17 +118,15 @@ export class CallSignatureInput
   }
 
   public toSignatureInputHeaderValue(): string {
-    const components: string[] = [];
-
-    components.push(signatureInputRequestType(this.request_type));
-    components.push(signatureInputPrincipal('canister_id', this.canister_id));
-    components.push(signatureInputKeyValuePair('method_name', this.method_name));
-    components.push(signatureInputSender(this.sender));
-    if (this.nonce) {
-      components.push(signatureInputNonce(this.nonce));
-    }
-    components.push(signatureInputIngressExpiry(this.ingress_expiry));
-    components.push(signatureInputIncludeHeaders(this.include_headers));
+    const components: string[] = [
+      signatureInputRequestType(this.request_type),
+      signatureInputPrincipal('canister_id', this.canister_id),
+      signatureInputKeyValuePair('method_name', this.method_name),
+      signatureInputSender(this.sender),
+      signatureInputIngressExpiry(this.ingress_expiry),
+      signatureInputIncludeHeaders(this.include_headers),
+      ...(this.nonce ? [signatureInputNonce(this.nonce)] : []),
+    ];
 
     // The arg component will be reconstructed by the HTTP Gateway from the HTTP Request it will receive from us.
     // Therefore, we don't include it in the signature input header value.
@@ -164,15 +162,13 @@ export class ReadStateSignatureInput extends SignatureInput<ReadStateRequestMap>
   }
 
   public toSignatureInputHeaderValue(): string {
-    const components: string[] = [];
-
-    components.push(signatureInputRequestType(this.request_type));
-    components.push(signatureInputSender(this.sender));
-    if (this.nonce) {
-      components.push(signatureInputNonce(this.nonce));
-    }
-    components.push(signatureInputIngressExpiry(this.ingress_expiry));
-    components.push(signatureInputKeyValuePair('paths', pathsToStrings(this.paths).join(',')));
+    const components: string[] = [
+      signatureInputRequestType(this.request_type),
+      signatureInputSender(this.sender),
+      signatureInputIngressExpiry(this.ingress_expiry),
+      signatureInputKeyValuePair('paths', pathsToStrings(this.paths).join(',')),
+      ...(this.nonce ? [signatureInputNonce(this.nonce)] : []),
+    ];
 
     return components.join(SIGNATURE_INPUT_SEPARATOR);
   }
@@ -217,17 +213,15 @@ export class QuerySignatureInput
   }
 
   public toSignatureInputHeaderValue(): string {
-    const components: string[] = [];
-
-    components.push(signatureInputRequestType(this.request_type));
-    components.push(signatureInputPrincipal('canister_id', this.canister_id));
-    components.push(signatureInputKeyValuePair('method_name', this.method_name));
-    components.push(signatureInputSender(this.sender));
-    if (this.nonce) {
-      components.push(signatureInputNonce(this.nonce));
-    }
-    components.push(signatureInputIngressExpiry(this.ingress_expiry));
-    components.push(signatureInputIncludeHeaders(this.include_headers));
+    const components: string[] = [
+      signatureInputRequestType(this.request_type),
+      signatureInputPrincipal('canister_id', this.canister_id),
+      signatureInputKeyValuePair('method_name', this.method_name),
+      signatureInputSender(this.sender),
+      signatureInputIngressExpiry(this.ingress_expiry),
+      signatureInputIncludeHeaders(this.include_headers),
+      ...(this.nonce ? [signatureInputNonce(this.nonce)] : []),
+    ];
 
     // The arg component will be reconstructed by the HTTP Gateway from the HTTP Request it will receive from us.
     // Therefore, we don't include it in the signature input header value.
