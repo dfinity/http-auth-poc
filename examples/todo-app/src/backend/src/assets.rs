@@ -4,11 +4,11 @@ use ic_asset_certification::{
 };
 use ic_cdk::api::{canister_cycle_balance, certified_data_set, data_certificate};
 use ic_http_certification::{
-    CERTIFICATE_EXPRESSION_HEADER_NAME, DefaultCelBuilder, HeaderField, HttpCertification,
+    utils::add_v2_certificate_header, DefaultCelBuilder, HeaderField, HttpCertification,
     HttpCertificationPath, HttpCertificationTree, HttpCertificationTreeEntry, HttpRequest,
-    HttpResponse, StatusCode, utils::add_v2_certificate_header,
+    HttpResponse, StatusCode, CERTIFICATE_EXPRESSION_HEADER_NAME,
 };
-use include_dir::{Dir, include_dir};
+use include_dir::{include_dir, Dir};
 use matchit::Params;
 use serde::Serialize;
 use std::{cell::RefCell, rc::Rc};
