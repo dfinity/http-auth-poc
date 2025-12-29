@@ -13,6 +13,7 @@ const SIGNATURE_INPUT_HEADER_NAME = 'signature-input';
 const SIGNATURE_KEY_HEADER_NAME = 'signature-key';
 
 const SIGNATURES_SEPARATOR = ',';
+const SIGNATURE_INPUT_COMPONENTS_SEPARATOR = ';';
 const SIGNATURE_INPUTS_SEPARATOR = ';';
 const SIGNATURE_KEYS_SEPARATOR = ',';
 
@@ -80,11 +81,11 @@ export async function addSignatureToRequest(
     signatures: {
       call: {
         signature: callSignature,
-        signatureInput: callSignatureInput.toSignatureInputHeaderValue(),
+        signatureInputComponents: callSignatureInput.toSignatureInputComponents(),
       },
       readState: {
         signature: readStateSignature,
-        signatureInput: readStateSignatureInput.toSignatureInputHeaderValue(),
+        signatureInputComponents: readStateSignatureInput.toSignatureInputComponents(),
       },
     },
     publicKeyBytes,
@@ -155,7 +156,7 @@ async function signSignatureInput(
 
 type SignatureParams = {
   signature: ArrayBuffer;
-  signatureInput: string;
+  signatureInputComponents: string[];
 };
 
 type SetAuthenticationHeadersParams = {
@@ -222,7 +223,7 @@ function setAuthenticationHeaders(
     signatureHeaderValue = getSignatureHeaderValue(SignatureName.Call, signatures.call.signature);
     signatureInputHeaderValue = getSignatureInputHeaderValue(
       SignatureName.Call,
-      signatures.call.signatureInput,
+      signatures.call.signatureInputComponents,
     );
     signatureKeyHeaderValue = getSignatureKeyHeaderValue(SignatureName.Call, sigKeyHeader);
 
@@ -235,7 +236,7 @@ function setAuthenticationHeaders(
       signatureInputHeaderValue = appendToSignatureInputHeaderValue(
         signatureInputHeaderValue,
         SignatureName.ReadState,
-        signatures.readState.signatureInput,
+        signatures.readState.signatureInputComponents,
       );
       signatureKeyHeaderValue = appendToSignatureKeyHeaderValue(
         signatureKeyHeaderValue,
@@ -247,7 +248,7 @@ function setAuthenticationHeaders(
     signatureHeaderValue = getSignatureHeaderValue(SignatureName.Query, signatures.query.signature);
     signatureInputHeaderValue = getSignatureInputHeaderValue(
       SignatureName.Query,
-      signatures.query.signatureInput,
+      signatures.query.signatureInputComponents,
     );
     signatureKeyHeaderValue = getSignatureKeyHeaderValue(SignatureName.Query, sigKeyHeader);
   } else {
@@ -275,17 +276,17 @@ function appendToSignatureHeaderValue(
 
 function getSignatureInputHeaderValue(
   signatureName: SignatureName,
-  signatureInput: string,
+  signatureInputComponents: string[],
 ): string {
-  return `${signatureName}=(${signatureInput})`;
+  return `${signatureName}=(${signatureInputComponents.join(SIGNATURE_INPUT_COMPONENTS_SEPARATOR)})`;
 }
 
 function appendToSignatureInputHeaderValue(
   previousSignatureInputHeaderValue: string,
   signatureName: SignatureName,
-  signatureInput: string,
+  signatureInputComponents: string[],
 ): string {
-  const signatureInputValue = getSignatureInputHeaderValue(signatureName, signatureInput);
+  const signatureInputValue = getSignatureInputHeaderValue(signatureName, signatureInputComponents);
   return [previousSignatureInputHeaderValue, signatureInputValue].join(SIGNATURE_INPUTS_SEPARATOR);
 }
 

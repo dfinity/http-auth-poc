@@ -3,7 +3,6 @@ import { utf8ToBytes } from '@noble/hashes/utils';
 import { base64Encode } from './base64';
 import { toRequestId } from './request-id';
 
-const SIGNATURE_INPUT_SEPARATOR = ';';
 const SIGNATURE_INPUT_KEY_VALUE_SEPARATOR = '=';
 
 export type CommonRequestMap = {
@@ -65,7 +64,7 @@ export abstract class SignatureInput<T extends CommonRequestMap> {
     this.ingress_expiry = ingress_expiry;
   }
 
-  abstract toSignatureInputHeaderValue(): string;
+  abstract toSignatureInputComponents(): string[];
   /**
    * Creates an object representation of the current input.
    */
@@ -117,7 +116,7 @@ export class CallSignatureInput
     };
   }
 
-  public toSignatureInputHeaderValue(): string {
+  public toSignatureInputComponents() {
     const components: string[] = [
       signatureInputRequestType(this.request_type),
       signatureInputPrincipal('canister_id', this.canister_id),
@@ -131,7 +130,7 @@ export class CallSignatureInput
     // The arg component will be reconstructed by the HTTP Gateway from the HTTP Request it will receive from us.
     // Therefore, we don't include it in the signature input header value.
 
-    return components.join(SIGNATURE_INPUT_SEPARATOR);
+    return components;
   }
 }
 
@@ -161,7 +160,7 @@ export class ReadStateSignatureInput extends SignatureInput<ReadStateRequestMap>
     };
   }
 
-  public toSignatureInputHeaderValue(): string {
+  public toSignatureInputComponents() {
     const components: string[] = [
       signatureInputRequestType(this.request_type),
       signatureInputSender(this.sender),
@@ -170,7 +169,7 @@ export class ReadStateSignatureInput extends SignatureInput<ReadStateRequestMap>
       ...(this.nonce ? [signatureInputNonce(this.nonce)] : []),
     ];
 
-    return components.join(SIGNATURE_INPUT_SEPARATOR);
+    return components;
   }
 }
 
@@ -212,7 +211,7 @@ export class QuerySignatureInput
     };
   }
 
-  public toSignatureInputHeaderValue(): string {
+  public toSignatureInputComponents() {
     const components: string[] = [
       signatureInputRequestType(this.request_type),
       signatureInputPrincipal('canister_id', this.canister_id),
@@ -226,7 +225,7 @@ export class QuerySignatureInput
     // The arg component will be reconstructed by the HTTP Gateway from the HTTP Request it will receive from us.
     // Therefore, we don't include it in the signature input header value.
 
-    return components.join(SIGNATURE_INPUT_SEPARATOR);
+    return components;
   }
 }
 
