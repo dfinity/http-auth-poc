@@ -23,24 +23,24 @@ use tracing_subscriber::{
     Registry as TracingRegistry, layer::SubscriberExt, reload, util::SubscriberInitExt,
 };
 
-pub enum IcUrl {
-    Remote(Url),
+pub enum ReplicaUrl {
+    Mainnet(Url),
     PocketIc(Url),
 }
 
-impl IcUrl {
+impl ReplicaUrl {
     pub fn new_remote(url: Url) -> Self {
-        IcUrl::Remote(url)
+        ReplicaUrl::Mainnet(url)
     }
 
     pub fn new_pocket_ic(url: Url) -> Self {
-        IcUrl::PocketIc(url)
+        ReplicaUrl::PocketIc(url)
     }
 
     pub fn into_url(&self) -> &Url {
         match self {
-            IcUrl::Remote(url) => url,
-            IcUrl::PocketIc(url) => url,
+            ReplicaUrl::Mainnet(url) => url,
+            ReplicaUrl::PocketIc(url) => url,
         }
     }
 }
@@ -48,7 +48,7 @@ impl IcUrl {
 pub async fn start_gateway(
     listen_ip_addr: &str,
     listen_port: u16,
-    replica_url: &IcUrl,
+    replica_url: &ReplicaUrl,
     shutdown_token: CancellationToken,
 ) -> Result<
     (
@@ -72,12 +72,12 @@ pub async fn start_gateway(
     ];
 
     match replica_url {
-        IcUrl::Remote(url) => {
+        ReplicaUrl::Mainnet(url) => {
             gateway_args.push("--ic-use-discovery");
             gateway_args.push("--ic-url");
             gateway_args.push(url.as_str());
         }
-        IcUrl::PocketIc(_) => {
+        ReplicaUrl::PocketIc(_) => {
             gateway_args.push("--ic-unsafe-root-key-fetch");
         }
     }
