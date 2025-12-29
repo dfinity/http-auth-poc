@@ -1,5 +1,0 @@
-build_cmd:
-  cargo rustc --release --target wasm32-unknown-unknown -p ic-http-auth --features canbench-rs --crate-type=cdylib
-
-wasm_path:
-  ../../target/wasm32-unknown-unknown/release/ic_http_auth.wasm

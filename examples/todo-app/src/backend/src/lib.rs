@@ -1,6 +1,5 @@
 mod api;
 mod assets;
-mod root_key;
 mod router;
 mod todo;
 
@@ -10,24 +9,24 @@ use ic_cdk::*;
 use ic_http_certification::{HttpRequest, HttpResponse};
 use matchit::Router;
 use once_cell::sync::OnceCell;
-use root_key::init_root_key;
 use router::MethodRouter;
 use todo::*;
 
 #[init]
 fn init() {
-    init_root_key();
     certify_all_assets();
 }
 
 #[post_upgrade]
 fn post_upgrade() {
-    init_root_key();
     certify_all_assets();
 }
 
-#[query]
-fn http_request(req: HttpRequest) -> HttpResponse {
+#[query(
+    decode_with = "ic_http::decode_args",
+    encode_with = "ic_http::encode_result"
+)]
+fn http_request_v2(req: HttpRequest) -> HttpResponse<'static> {
     let path = req.get_path().expect("Failed to parse request path");
 
     if path.starts_with("/api") {
@@ -38,8 +37,11 @@ fn http_request(req: HttpRequest) -> HttpResponse {
     serve_asset(&req)
 }
 
-#[update]
-fn http_request_update(req: HttpRequest) -> HttpResponse {
+#[update(
+    decode_with = "ic_http::decode_args",
+    encode_with = "ic_http::encode_result"
+)]
+fn http_request_update_v2(req: HttpRequest) -> HttpResponse<'static> {
     let path = req.get_path().expect("Failed to parse request path");
 
     if path.starts_with("/api") {

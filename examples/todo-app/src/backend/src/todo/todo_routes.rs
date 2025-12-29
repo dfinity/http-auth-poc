@@ -3,10 +3,8 @@ use super::todo_types::{
     ListTodosResponse, ListTodosResponseBody, TodoItem, UpdateTodoItemRequest,
     UpdateTodoItemResponse,
 };
-use crate::{api::json_decode, root_key::get_root_key};
-use candid::Encode;
-use ic_cdk::println;
-use ic_http_auth::validate_http_signature_headers;
+use crate::api::json_decode;
+use ic_cdk::api::msg_caller;
 use ic_http_certification::{HttpRequest, HttpResponse};
 use matchit::Params;
 use once_cell::sync::OnceCell;
@@ -28,16 +26,10 @@ fn todos() -> &'static Mutex<UserTodoMap> {
 }
 
 pub fn get_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpResponse<'static> {
-    let root_key = get_root_key();
+    ic_cdk::println!("[get_todo_item_handler] Processing request: {:?}", req);
+    let user_principal = msg_caller();
 
-    println!("[get_todo_item_handler] Processing request: {:?}", req);
-    println!(
-        "[get_todo_item_handler] Candid-serialized hex-encoded request: {}",
-        hex::encode(Encode!(&req).unwrap())
-    );
-    let jwt = validate_http_signature_headers(req, root_key).unwrap();
-
-    println!("[get_todo_item_handler] User principal: {}", jwt.principal);
+    ic_cdk::println!("[get_todo_item_handler] User principal: {}", user_principal);
 
     let Some(id_str) = params.get("id") else {
         ic_cdk::println!("[get_todo_item_handler] Missing ID parameter");
@@ -47,7 +39,7 @@ pub fn get_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpResponse
         ic_cdk::println!("[get_todo_item_handler] Invalid ID format: {}", id_str);
         return HttpResponse::bad_request(b"Invalid ID format", vec![]).build();
     };
-    let user_id = jwt.principal.to_text();
+    let user_id = user_principal.to_text();
 
     let all_todos = todos().lock().unwrap();
 
@@ -63,15 +55,13 @@ pub fn get_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpResponse
     HttpResponse::not_found(b"Todo item not found", vec![]).build()
 }
 
-pub fn list_todo_items_handler(req: &HttpRequest, _params: &Params) -> HttpResponse<'static> {
-    let root_key = get_root_key();
-
-    let jwt = validate_http_signature_headers(req, root_key).unwrap();
+pub fn list_todo_items_handler(_req: &HttpRequest, _params: &Params) -> HttpResponse<'static> {
+    let user_principal = msg_caller();
 
     let mut all_todos = todos().lock().unwrap();
 
     let user_todos = all_todos
-        .entry(jwt.principal.to_text())
+        .entry(user_principal.to_text())
         .or_default()
         .values()
         .cloned()
@@ -79,21 +69,15 @@ pub fn list_todo_items_handler(req: &HttpRequest, _params: &Params) -> HttpRespo
 
     let data = ListTodosResponseBody {
         todos: user_todos,
-        user_principal: jwt.principal,
+        user_principal,
     };
 
     ListTodosResponse::ok(data)
 }
 
 pub fn create_todo_item_handler(req: &HttpRequest, _params: &Params) -> HttpResponse<'static> {
-    let root_key = get_root_key();
-
-    println!("[create_todo_item_handler] Processing request: {:?}", req);
-    println!(
-        "[create_todo_item_handler] Candid-serialized hex-encoded request: {}",
-        hex::encode(Encode!(&req).unwrap())
-    );
-    let jwt = validate_http_signature_headers(req, root_key).unwrap();
+    ic_cdk::println!("[create_todo_item_handler] Processing request: {:?}", req);
+    let user_principal = msg_caller();
 
     let req_body: CreateTodoItemRequest = json_decode(req.body());
 
@@ -110,7 +94,7 @@ pub fn create_todo_item_handler(req: &HttpRequest, _params: &Params) -> HttpResp
     };
     let mut all_todos = todos().lock().unwrap();
     all_todos
-        .entry(jwt.principal.to_text())
+        .entry(user_principal.to_text())
         .or_default()
         .insert(id, todo_item.clone());
 
@@ -118,8 +102,6 @@ pub fn create_todo_item_handler(req: &HttpRequest, _params: &Params) -> HttpResp
 }
 
 pub fn update_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpResponse<'static> {
-    let root_key = get_root_key();
-
     ic_cdk::println!("[update_todo_item_handler] Starting handler");
     ic_cdk::println!(
         "[update_todo_item_handler] Method: {}, Path: {}",
@@ -128,16 +110,10 @@ pub fn update_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpRespo
     );
     ic_cdk::println!("[update_todo_item_handler] All Params: {:?}", params);
 
-    // Validate the JWT first
-    let jwt_result = validate_http_signature_headers(req, root_key);
-    if let Err(e) = jwt_result {
-        ic_cdk::println!("[update_todo_item_handler] JWT validation error: {:?}", e);
-        return HttpResponse::unauthorized(b"Unauthorized", vec![]).build();
-    }
-    let jwt = jwt_result.unwrap();
+    let user_principal = msg_caller();
     ic_cdk::println!(
         "[update_todo_item_handler] User principal: {}",
-        jwt.principal.to_text()
+        user_principal.to_text()
     );
 
     // Parse the request body
@@ -172,12 +148,12 @@ pub fn update_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpRespo
     ic_cdk::println!("[update_todo_item_handler] Todo ID: {}", id);
 
     let mut all_todos = todos().lock().unwrap();
-    let user_todos = all_todos.get_mut(&jwt.principal.to_text());
+    let user_todos = all_todos.get_mut(&user_principal.to_text());
 
     if user_todos.is_none() {
         ic_cdk::println!(
             "[update_todo_item_handler] No todos found for user: {}",
-            jwt.principal.to_text()
+            user_principal.to_text()
         );
         return HttpResponse::not_found(b"Todo item not found", vec![]).build();
     }
@@ -203,8 +179,6 @@ pub fn update_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpRespo
 }
 
 pub fn delete_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpResponse<'static> {
-    let root_key = get_root_key();
-
     ic_cdk::println!("[delete_todo_item_handler] Starting handler");
     ic_cdk::println!(
         "[delete_todo_item_handler] Method: {}, Path: {}",
@@ -213,13 +187,13 @@ pub fn delete_todo_item_handler(req: &HttpRequest, params: &Params) -> HttpRespo
     );
     ic_cdk::println!("[delete_todo_item_handler] All Params: {:?}", params);
 
-    let jwt = validate_http_signature_headers(req, root_key).unwrap();
+    let user_principal = msg_caller();
 
     let id: u32 = params.get("id").unwrap().parse().unwrap();
 
     let mut all_todos = todos().lock().unwrap();
     all_todos
-        .get_mut(&jwt.principal.to_text())
+        .get_mut(&user_principal.to_text())
         .and_then(|todos| todos.remove(&id));
 
     DeleteTodoItemResponse::ok(())
