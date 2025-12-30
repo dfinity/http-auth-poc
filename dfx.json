@@ -20,10 +20,6 @@
       "shrink": true,
       "optimize": "cycles",
       "frontend": {}
-    },
-    "internet-identity": {
-      "type": "pull",
-      "id": "rdmx6-jaaaa-aaaaa-aaadq-cai"
     }
   }
 }
