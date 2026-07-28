@@ -13,47 +13,47 @@ importers:
         version: 2.3.10
       '@tanstack/vite-config':
         specifier: ^0.4.3
-        version: 0.4.3(@types/node@24.12.2)(rollup@4.60.1)(typescript@5.9.3)(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1))
+        version: 0.4.3(@types/node@24.13.3)(rollup@4.60.1)(typescript@5.9.3)(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1))
       '@types/node':
         specifier: ^24.7.1
-        version: 24.12.2
+        version: 24.13.3
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
       vite:
         specifier: ^7.3.2
-        version: 7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)
+        version: 7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)
       vite-plugin-checker:
         specifier: ^0.12.0
-        version: 0.12.0(@biomejs/biome@2.3.10)(optionator@0.9.4)(typescript@5.9.3)(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1))
+        version: 0.12.0(@biomejs/biome@2.3.10)(optionator@0.9.4)(typescript@5.9.3)(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1))
 
   examples/todo-app/src/frontend:
     dependencies:
       '@icp-sdk/auth':
         specifier: ^5.0.0
-        version: 5.0.0(@icp-sdk/core@5.2.1)
+        version: 5.0.0(@icp-sdk/core@5.4.0)
       '@icp-sdk/core':
         specifier: ^5.0.0
-        version: 5.2.1
+        version: 5.4.0
       '@icp-sdk/http':
         specifier: workspace:*
         version: link:../../../../packages/http-auth-js
       solid-js:
         specifier: ^1.9.6
-        version: 1.9.12
+        version: 1.9.14
     devDependencies:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
       vite:
         specifier: ^7.3.2
-        version: 7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)
+        version: 7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)
       vite-plugin-compression2:
         specifier: ^1.3.3
-        version: 1.4.0(rollup@4.60.1)(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1))
+        version: 1.4.0(rollup@4.60.1)(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1))
       vite-plugin-solid:
         specifier: ^2.11.6
-        version: 2.11.12(solid-js@1.9.12)(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1))
+        version: 2.11.14(solid-js@1.9.14)(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1))
 
   packages/http-auth-js:
     dependencies:
@@ -62,7 +62,7 @@ importers:
         version: '@jsr/dajiaji__bhttp@0.3.6'
       '@icp-sdk/core':
         specifier: ^5.0.0
-        version: 5.2.1
+        version: 5.4.0
       '@noble/hashes':
         specifier: ^1.8.0
         version: 1.8.0
@@ -209,8 +209,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@dfinity/cbor@0.2.2':
-    resolution: {integrity: sha512-GPJpH73kDEKbUBdUjY80lz7cq9l0vm1h/7ppejPV6O0ZTqCLrYspssYvqjRmK4aNnJ/SKXsP0rg9LYX7zpegaA==}
+  '@dfinity/cbor@0.2.3':
+    resolution: {integrity: sha512-5GX+9tAf29r94Pxv8nCzrv2/t+AkOfem/c/G61+FA2Wadq7THvc5cvr/AVLH0LpukVfNSWRRHvl1fkCdiB9MMQ==}
 
   '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
@@ -529,8 +529,8 @@ packages:
     peerDependencies:
       '@icp-sdk/core': ^5
 
-  '@icp-sdk/core@5.2.1':
-    resolution: {integrity: sha512-FImRjnayCarov7vfr52QU3BO8tPAprbyl4O+0KWz4v7h8ZbKq15fhtdb53M6+ltUsCbWkP/lEgrQ4t1WhIAHjQ==}
+  '@icp-sdk/core@5.4.0':
+    resolution: {integrity: sha512-yedhCkHIhCxI65W8id99Mi8fUgSyqKSTbD57AphquNcFV2/3Rjykng0/6H08mHswKydDcv6Y0+e8aPdrznewCw==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -761,8 +761,8 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
-  '@types/node@24.12.2':
-    resolution: {integrity: sha512-A1sre26ke7HDIuY/M23nd9gfB+nrmhtYyMINbjI1zHJxYteKR6qSMX56FsmjMcDb3SMcjJg5BiRRgOCC/yBD0g==}
+  '@types/node@24.13.3':
+    resolution: {integrity: sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==}
 
   '@volar/language-core@2.4.23':
     resolution: {integrity: sha512-hEEd5ET/oSmBC6pi1j6NaNYRWoAiDhINbT8rmwtINugR39loROSlufGdYMF9TaKGfz+ViGs1Idi3mAhnuPcoGQ==}
@@ -958,8 +958,8 @@ packages:
     resolution: {integrity: sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==}
     engines: {node: '>=6.9.0'}
 
-  get-tsconfig@4.13.7:
-    resolution: {integrity: sha512-7tN6rFgBlMgpBML5j8typ92BKFi2sFQvIdpAqLA2beia5avZDrMs0FLZiM5etShWq5irVyGcGMEA1jcDaK7A/Q==}
+  get-tsconfig@4.14.0:
+    resolution: {integrity: sha512-yTb+8DXzDREzgvYmh6s9vHsSVCHeC0G3PI5bEXNBHtmshPnO+S5O7qgLEOn0I5QvMy6kpZN8K1NKGyilLb93wA==}
 
   globrex@0.1.2:
     resolution: {integrity: sha512-uHJgbwAMwNFf5mLst7IWLNg14x1CkeqglJb/K3doi4dw6q2IvAAmM/Y81kevy83wP+Sst+nutFTYOGg3d1lsxg==}
@@ -1163,18 +1163,18 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  seroval-plugins@1.5.0:
-    resolution: {integrity: sha512-EAHqADIQondwRZIdeW2I636zgsODzoBDwb3PT/+7TLDWyw1Dy/Xv7iGUIEXXav7usHDE9HVhOU61irI3EnyyHA==}
+  seroval-plugins@1.5.6:
+    resolution: {integrity: sha512-HXuLAX2pu/UByPpaeo/TaMfvMIi+1QqIoPJYCcAtU8QkVNwgR6MPlGuCQTErV1JwraaMbYaWVIBX7mppzGLATQ==}
     engines: {node: '>=10'}
     peerDependencies:
       seroval: ^1.0
 
-  seroval@1.5.0:
-    resolution: {integrity: sha512-OE4cvmJ1uSPrKorFIH9/w/Qwuvi/IMcGbv5RKgcJ/zjA/IohDLU6SVaxFN9FwajbP7nsX0dQqMDes1whk3y+yw==}
+  seroval@1.5.6:
+    resolution: {integrity: sha512-rVQVWjjSvlINzaQPZH5JFqsqEsIWdTxY3iJZCnTL/5gQbXIRooVZKI60tVCkOVfzcRPejboxO2t0P89dg5mQaA==}
     engines: {node: '>=10'}
 
-  solid-js@1.9.12:
-    resolution: {integrity: sha512-QzKaSJq2/iDrWR1As6MHZQ8fQkdOBf8GReYb7L5iKwMGceg7HxDcaOHk0at66tNgn9U2U7dXo8ZZpLIAmGMzgw==}
+  solid-js@1.9.14:
+    resolution: {integrity: sha512-sAEXC0Kk0S1EDg+8ysEWJDbYhA3RRoEjwuySUGlKIemeo0I5YZfOyumNjNs9Sv3y2nmhD+0rW66ag2HsMuQiGQ==}
 
   solid-refresh@0.6.3:
     resolution: {integrity: sha512-F3aPsX6hVw9ttm5LYlth8Q15x6MlI/J3Dn+o3EQyRTtTxidepSTwAYdozt01/YA+7ObcciagGEyXIopGZzQtbA==}
@@ -1221,6 +1221,7 @@ packages:
   tsconfck@3.1.6:
     resolution: {integrity: sha512-ks6Vjr/jEw0P1gmOVwutM3B7fWxoWBL2KRDb1JfqGVawBmO5UsvmWOQFGHBPl5yxYz4eERr19E6L7NMv+Fej4w==}
     engines: {node: ^18 || >=20}
+    deprecated: unmaintained
     hasBin: true
     peerDependencies:
       typescript: ^5.0.0
@@ -1253,8 +1254,8 @@ packages:
   ufo@1.6.1:
     resolution: {integrity: sha512-9a4/uxlTWJ4+a5i0ooc1rU7C7YOw3wT+UGqdeNNHWnOF9qcMBgLRS+4IYUqbczewFx4mLEig6gawh7X6mFlEkA==}
 
-  undici-types@7.16.0:
-    resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
+  undici-types@7.18.2:
+    resolution: {integrity: sha512-AsuCzffGHJybSaRrmr5eHr81mwJU3kjw6M+uprWvCXiNeN9SOGwQ3Jn8jb8m3Z6izVgknn1R0FTCEAP2QrLY/w==}
 
   unicorn-magic@0.3.0:
     resolution: {integrity: sha512-+QBBXBCvifc56fsbuxZQ6Sic3wqqc3WWaqxs58gvJrcOuN83HGTCwz3oS5phzU9LthRNE9VrJCFCLUgHeeFnfA==}
@@ -1330,12 +1331,12 @@ packages:
     peerDependencies:
       vite: ^2.0.0 || ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0
 
-  vite-plugin-solid@2.11.12:
-    resolution: {integrity: sha512-FgjPcx2OwX9h6f28jli7A4bG7PP3te8uyakE5iqsmpq3Jqi1TWLgSroC9N6cMfGRU2zXsl4Q6ISvTr2VL0QHpA==}
+  vite-plugin-solid@2.11.14:
+    resolution: {integrity: sha512-7ZVBt8rpoyqmlwin2kRIUveaHoF6/kulY7gsnD+qFh4nS29V4OPAnw+ojoAspXIjObiL9o1xh9a/nTuYHm02Rw==}
     peerDependencies:
-      '@testing-library/jest-dom': ^5.16.6 || ^5.17.0 || ^6.*
+      '@testing-library/jest-dom': ^5.16.6 || ^5.17.0 || ^6.0.0 || ^7.0.0
       solid-js: ^1.7.2
-      vite: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
+      vite: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0 || ^9.0.0
     peerDependenciesMeta:
       '@testing-library/jest-dom':
         optional: true
@@ -1348,8 +1349,8 @@ packages:
       vite:
         optional: true
 
-  vite@7.3.2:
-    resolution: {integrity: sha512-Bby3NOsna2jsjfLVOHKes8sGwgl4TT0E6vvpYgnAYDIF/tie7MRaFthmKuHx1NSXjiTueXH3do80FMQgvEktRg==}
+  vite@7.3.6:
+    resolution: {integrity: sha512-4XP60spRGjSZFf1qYH+dJIkK2znL3zQfl9KkOV9MkkRR/3Dls0dxaBsQPTloEc5BLXWPL9vsOxopxyKoMmDueg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -1562,7 +1563,7 @@ snapshots:
   '@biomejs/cli-win32-x64@2.3.10':
     optional: true
 
-  '@dfinity/cbor@0.2.2': {}
+  '@dfinity/cbor@0.2.3': {}
 
   '@esbuild/aix-ppc64@0.25.12':
     optional: true
@@ -1720,14 +1721,14 @@ snapshots:
   '@esbuild/win32-x64@0.27.7':
     optional: true
 
-  '@icp-sdk/auth@5.0.0(@icp-sdk/core@5.2.1)':
+  '@icp-sdk/auth@5.0.0(@icp-sdk/core@5.4.0)':
     dependencies:
-      '@icp-sdk/core': 5.2.1
+      '@icp-sdk/core': 5.4.0
       idb: 7.1.1
 
-  '@icp-sdk/core@5.2.1':
+  '@icp-sdk/core@5.4.0':
     dependencies:
-      '@dfinity/cbor': 0.2.2
+      '@dfinity/cbor': 0.2.3
       '@noble/curves': 1.9.7
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
@@ -1755,23 +1756,23 @@ snapshots:
 
   '@jsr/dajiaji__bhttp@0.3.6': {}
 
-  '@microsoft/api-extractor-model@7.29.6(@types/node@24.12.2)':
+  '@microsoft/api-extractor-model@7.29.6(@types/node@24.13.3)':
     dependencies:
       '@microsoft/tsdoc': 0.15.1
       '@microsoft/tsdoc-config': 0.17.1
-      '@rushstack/node-core-library': 5.7.0(@types/node@24.12.2)
+      '@rushstack/node-core-library': 5.7.0(@types/node@24.13.3)
     transitivePeerDependencies:
       - '@types/node'
 
-  '@microsoft/api-extractor@7.47.7(@types/node@24.12.2)':
+  '@microsoft/api-extractor@7.47.7(@types/node@24.13.3)':
     dependencies:
-      '@microsoft/api-extractor-model': 7.29.6(@types/node@24.12.2)
+      '@microsoft/api-extractor-model': 7.29.6(@types/node@24.13.3)
       '@microsoft/tsdoc': 0.15.1
       '@microsoft/tsdoc-config': 0.17.1
-      '@rushstack/node-core-library': 5.7.0(@types/node@24.12.2)
+      '@rushstack/node-core-library': 5.7.0(@types/node@24.13.3)
       '@rushstack/rig-package': 0.5.3
-      '@rushstack/terminal': 0.14.0(@types/node@24.12.2)
-      '@rushstack/ts-command-line': 4.22.6(@types/node@24.12.2)
+      '@rushstack/terminal': 0.14.0(@types/node@24.13.3)
+      '@rushstack/ts-command-line': 4.22.6(@types/node@24.13.3)
       lodash: 4.17.21
       minimatch: 3.0.8
       resolve: 1.22.11
@@ -1879,7 +1880,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.60.1':
     optional: true
 
-  '@rushstack/node-core-library@5.7.0(@types/node@24.12.2)':
+  '@rushstack/node-core-library@5.7.0(@types/node@24.13.3)':
     dependencies:
       ajv: 8.13.0
       ajv-draft-04: 1.0.0(ajv@8.13.0)
@@ -1890,23 +1891,23 @@ snapshots:
       resolve: 1.22.11
       semver: 7.5.4
     optionalDependencies:
-      '@types/node': 24.12.2
+      '@types/node': 24.13.3
 
   '@rushstack/rig-package@0.5.3':
     dependencies:
       resolve: 1.22.11
       strip-json-comments: 3.1.1
 
-  '@rushstack/terminal@0.14.0(@types/node@24.12.2)':
+  '@rushstack/terminal@0.14.0(@types/node@24.13.3)':
     dependencies:
-      '@rushstack/node-core-library': 5.7.0(@types/node@24.12.2)
+      '@rushstack/node-core-library': 5.7.0(@types/node@24.13.3)
       supports-color: 8.1.1
     optionalDependencies:
-      '@types/node': 24.12.2
+      '@types/node': 24.13.3
 
-  '@rushstack/ts-command-line@4.22.6(@types/node@24.12.2)':
+  '@rushstack/ts-command-line@4.22.6(@types/node@24.13.3)':
     dependencies:
-      '@rushstack/terminal': 0.14.0(@types/node@24.12.2)
+      '@rushstack/terminal': 0.14.0(@types/node@24.13.3)
       '@types/argparse': 1.0.38
       argparse: 1.0.10
       string-argv: 0.3.2
@@ -1926,13 +1927,13 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/base': 1.2.6
 
-  '@tanstack/vite-config@0.4.3(@types/node@24.12.2)(rollup@4.60.1)(typescript@5.9.3)(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1))':
+  '@tanstack/vite-config@0.4.3(@types/node@24.13.3)(rollup@4.60.1)(typescript@5.9.3)(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1))':
     dependencies:
       rollup-plugin-preserve-directives: 0.4.0(rollup@4.60.1)
-      vite: 7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)
-      vite-plugin-dts: 4.2.3(@types/node@24.12.2)(rollup@4.60.1)(typescript@5.9.3)(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1))
-      vite-plugin-externalize-deps: 0.10.0(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1))
-      vite-tsconfig-paths: 5.1.4(typescript@5.9.3)(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1))
+      vite: 7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)
+      vite-plugin-dts: 4.2.3(@types/node@24.13.3)(rollup@4.60.1)(typescript@5.9.3)(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1))
+      vite-plugin-externalize-deps: 0.10.0(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1))
+      vite-tsconfig-paths: 5.1.4(typescript@5.9.3)(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1))
     transitivePeerDependencies:
       - '@types/node'
       - rollup
@@ -1964,9 +1965,9 @@ snapshots:
 
   '@types/estree@1.0.8': {}
 
-  '@types/node@24.12.2':
+  '@types/node@24.13.3':
     dependencies:
-      undici-types: 7.16.0
+      undici-types: 7.18.2
 
   '@volar/language-core@2.4.23':
     dependencies:
@@ -2056,12 +2057,12 @@ snapshots:
       html-entities: 2.3.3
       parse5: 7.3.0
 
-  babel-preset-solid@1.9.10(@babel/core@7.28.5)(solid-js@1.9.12):
+  babel-preset-solid@1.9.10(@babel/core@7.28.5)(solid-js@1.9.14):
     dependencies:
       '@babel/core': 7.28.5
       babel-plugin-jsx-dom-expressions: 0.40.3(@babel/core@7.28.5)
     optionalDependencies:
-      solid-js: 1.9.12
+      solid-js: 1.9.14
 
   balanced-match@1.0.2: {}
 
@@ -2202,7 +2203,7 @@ snapshots:
 
   gensync@1.0.0-beta.2: {}
 
-  get-tsconfig@4.13.7:
+  get-tsconfig@4.14.0:
     dependencies:
       resolve-pkg-maps: 1.0.0
     optional: true
@@ -2411,24 +2412,24 @@ snapshots:
     dependencies:
       lru-cache: 6.0.0
 
-  seroval-plugins@1.5.0(seroval@1.5.0):
+  seroval-plugins@1.5.6(seroval@1.5.6):
     dependencies:
-      seroval: 1.5.0
+      seroval: 1.5.6
 
-  seroval@1.5.0: {}
+  seroval@1.5.6: {}
 
-  solid-js@1.9.12:
+  solid-js@1.9.14:
     dependencies:
       csstype: 3.1.3
-      seroval: 1.5.0
-      seroval-plugins: 1.5.0(seroval@1.5.0)
+      seroval: 1.5.6
+      seroval-plugins: 1.5.6(seroval@1.5.6)
 
-  solid-refresh@0.6.3(solid-js@1.9.12):
+  solid-refresh@0.6.3(solid-js@1.9.14):
     dependencies:
       '@babel/generator': 7.28.5
       '@babel/helper-module-imports': 7.27.1
       '@babel/types': 7.28.5
-      solid-js: 1.9.12
+      solid-js: 1.9.14
     transitivePeerDependencies:
       - supports-color
 
@@ -2466,7 +2467,7 @@ snapshots:
   tsx@4.19.4:
     dependencies:
       esbuild: 0.25.12
-      get-tsconfig: 4.13.7
+      get-tsconfig: 4.14.0
     optionalDependencies:
       fsevents: 2.3.3
     optional: true
@@ -2482,7 +2483,7 @@ snapshots:
 
   ufo@1.6.1: {}
 
-  undici-types@7.16.0: {}
+  undici-types@7.18.2: {}
 
   unicorn-magic@0.3.0: {}
 
@@ -2498,7 +2499,7 @@ snapshots:
     dependencies:
       punycode: 2.3.1
 
-  vite-plugin-checker@0.12.0(@biomejs/biome@2.3.10)(optionator@0.9.4)(typescript@5.9.3)(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)):
+  vite-plugin-checker@0.12.0(@biomejs/biome@2.3.10)(optionator@0.9.4)(typescript@5.9.3)(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)):
     dependencies:
       '@babel/code-frame': 7.27.1
       chokidar: 4.0.3
@@ -2507,24 +2508,24 @@ snapshots:
       picomatch: 4.0.3
       tiny-invariant: 1.3.3
       tinyglobby: 0.2.15
-      vite: 7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)
+      vite: 7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)
       vscode-uri: 3.1.0
     optionalDependencies:
       '@biomejs/biome': 2.3.10
       optionator: 0.9.4
       typescript: 5.9.3
 
-  vite-plugin-compression2@1.4.0(rollup@4.60.1)(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)):
+  vite-plugin-compression2@1.4.0(rollup@4.60.1)(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)):
     dependencies:
       '@rollup/pluginutils': 5.3.0(rollup@4.60.1)
       tar-mini: 0.2.0
-      vite: 7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)
+      vite: 7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)
     transitivePeerDependencies:
       - rollup
 
-  vite-plugin-dts@4.2.3(@types/node@24.12.2)(rollup@4.60.1)(typescript@5.9.3)(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)):
+  vite-plugin-dts@4.2.3(@types/node@24.13.3)(rollup@4.60.1)(typescript@5.9.3)(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)):
     dependencies:
-      '@microsoft/api-extractor': 7.47.7(@types/node@24.12.2)
+      '@microsoft/api-extractor': 7.47.7(@types/node@24.13.3)
       '@rollup/pluginutils': 5.3.0(rollup@4.60.1)
       '@volar/typescript': 2.4.23
       '@vue/language-core': 2.1.6(typescript@5.9.3)
@@ -2535,41 +2536,41 @@ snapshots:
       magic-string: 0.30.21
       typescript: 5.9.3
     optionalDependencies:
-      vite: 7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)
+      vite: 7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)
     transitivePeerDependencies:
       - '@types/node'
       - rollup
       - supports-color
 
-  vite-plugin-externalize-deps@0.10.0(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)):
+  vite-plugin-externalize-deps@0.10.0(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)):
     dependencies:
-      vite: 7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)
+      vite: 7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)
 
-  vite-plugin-solid@2.11.12(solid-js@1.9.12)(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)):
+  vite-plugin-solid@2.11.14(solid-js@1.9.14)(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)):
     dependencies:
       '@babel/core': 7.28.5
       '@types/babel__core': 7.20.5
-      babel-preset-solid: 1.9.10(@babel/core@7.28.5)(solid-js@1.9.12)
+      babel-preset-solid: 1.9.10(@babel/core@7.28.5)(solid-js@1.9.14)
       merge-anything: 5.1.7
-      solid-js: 1.9.12
-      solid-refresh: 0.6.3(solid-js@1.9.12)
-      vite: 7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)
-      vitefu: 1.0.5(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1))
+      solid-js: 1.9.14
+      solid-refresh: 0.6.3(solid-js@1.9.14)
+      vite: 7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)
+      vitefu: 1.0.5(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1))
     transitivePeerDependencies:
       - supports-color
 
-  vite-tsconfig-paths@5.1.4(typescript@5.9.3)(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)):
+  vite-tsconfig-paths@5.1.4(typescript@5.9.3)(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)):
     dependencies:
       debug: 4.4.3
       globrex: 0.1.2
       tsconfck: 3.1.6(typescript@5.9.3)
     optionalDependencies:
-      vite: 7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)
+      vite: 7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)
     transitivePeerDependencies:
       - supports-color
       - typescript
 
-  vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1):
+  vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1):
     dependencies:
       esbuild: 0.27.7
       fdir: 6.5.0(picomatch@4.0.4)
@@ -2578,14 +2579,14 @@ snapshots:
       rollup: 4.60.1
       tinyglobby: 0.2.15
     optionalDependencies:
-      '@types/node': 24.12.2
+      '@types/node': 24.13.3
       fsevents: 2.3.3
       tsx: 4.19.4
       yaml: 2.8.1
 
-  vitefu@1.0.5(vite@7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)):
+  vitefu@1.0.5(vite@7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)):
     optionalDependencies:
-      vite: 7.3.2(@types/node@24.12.2)(tsx@4.19.4)(yaml@2.8.1)
+      vite: 7.3.6(@types/node@24.13.3)(tsx@4.19.4)(yaml@2.8.1)
 
   vscode-uri@3.1.0: {}
 
